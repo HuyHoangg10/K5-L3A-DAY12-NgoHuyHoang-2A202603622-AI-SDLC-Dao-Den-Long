@@ -1,0 +1,933 @@
+{
+  "passed": 224,
+  "failed": 0,
+  "total": 224,
+  "files": [
+    {
+      "file": "tests/champions.test.ts",
+      "tests": [
+        {
+          "name": "Rowdy Cub: big form E Crunch also thins shades where it lands, with a bigger radius and stronger slow",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form Q is a boulder: no return, 2 damage, thicker hit radius",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form R Rampage: shades within radius are thrown r.push metres away and stunned; farther ones are not",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form W Wallop misses a shade behind Mây",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form W Wallop: the area is hit after a short delay, not before",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form a shade near Mây slowly builds rage (passiveRage per second)",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form each skill hit gives hitRage; a hit on Mây gives hurtRage; rage shows on the bar",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form full rage turns the cub big for megaTicks, then it shrinks back and rage resets",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form rage drains while big, so it is the timer of the big form",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form the small form is quicker than Mây: speed x miniSpeed",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form catching the stone takes exactly refund x cooldown off what was left",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form E Bounce does not take Mây off the island",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form E Bounce: leaps toward the mouse but at most e.range metres, and slows shades where it lands",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Q flies out, hits a shade on the way out and again on the way back, then is caught and refunds cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Q range: the stone turns around after q.range metres",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form the stone slows what it hits: the shade moves at slow x speed afterwards",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form W is passive in the small form (just a hint); R needs the big form",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Zippy Streak: every 3rd hit within the window gives a sprint",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Zippy Streak: hits older than the window are forgotten",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver E Twin Sting: hits the shade nearest to the mouse, within range; free; 1 damage",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver E Twin Sting: out of range = no target, no cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver E Twin Sting: poisoned shades take extra damage, and a kill gives refund light",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver light is her mana: Q 1, W 1, R 2 fireflies; E is free; no light means no cast and no cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver passive: always runs x speed",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver Q range: the circle is placed at most q.range metres away",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver Q Venom Burst that hits nothing gives no speed boost",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver Q Venom Burst: telegraphed circle at the mouse; after the delay shades inside are poisoned, others are not; hit = speed boost",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver R Stone Stare: a shade just inside the half-angle is caught",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver R Stone Stare: shades inside the cone are frozen and thinned; one outside the cone angle is untouched",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver skills are shown with their light cost and grey out without light",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver the speed bonus scales both axes: walking diagonally covers speed x mult on x and on z",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver W Haze Ring: after its delay it slows shades inside to w.slow and keeps them poisoned, for zoneTicks, then ends",
+          "status": "passed"
+        },
+        {
+          "name": "shared base a slow of mult 0.5 halves a chasing shade's step",
+          "status": "passed"
+        },
+        {
+          "name": "shared base kits do nothing once the game is over",
+          "status": "passed"
+        },
+        {
+          "name": "shared base poison and slow are bookkept per shade and forgotten when the shade is gone",
+          "status": "passed"
+        },
+        {
+          "name": "shared base the speed bonus never pushes Mây past the island wall",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/extras.test.ts",
+      "tests": [
+        {
+          "name": "Card Reader: E Lure Lantern (new) cooldown KIT.e.cd",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: E Lure Lantern (new) costs a firefly and needs light",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: E Lure Lantern (new) shades chase the lure instead of Mây while it lasts",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: E Lure Lantern (new) the lure can be thrown at most `range` metres away",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: E Lure Lantern (new) when it ends it bursts: shades next to it are stunned and thinned by 1 ink",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan a hit shade is stunned for 1 s",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan cards pass through: two shades in a line are both hit by one cast, each thinned by 1 ink",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan cards stop after KIT.q.range metres",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan cooldown is exact: a press one tick early is blocked, the exact tick works",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan costs one firefly, throws 3 cards, starts the cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan flies toward the mouse: a shade at -X is hit when the mouse is at -X, missed when there is no mouse (camera looks +Z)",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan needs a firefly: with none carried nothing is thrown, nothing is paid, no cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: Q Card Fan the 3 cards leave at 0 and +-spreadDeg",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: R Lantern Gate a hit cancels the channel and starts the short cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: R Lantern Gate channels, then puts Mây 2 m from the lantern nearest to the mouse",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: R Lantern Gate does not move Mây before the channel ends",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: R Lantern Gate full cooldown after a successful gate",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: R Lantern Gate without a mouse it uses the camera: yaw 90 looks along +X, which is L2",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) blue: adds blueMana fireflies, never above capacity",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) cards flip gold -> blue -> pink every 6 ticks and the second press stops on the one showing",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) cooldown starts at the pick; rolling again before it ends is refused",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) gold: every shade within goldRadius freezes for goldStun ticks; shades farther away are untouched",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) pink: run speed x redBoost for redTicks, then back to normal",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) shows the rolling card above the hat, and clears it after the pick",
+          "status": "passed"
+        },
+        {
+          "name": "Card Reader: W Roll the Card (the card acts at once) stops by itself after rollMax ticks",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract cards: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract cub: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract default: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract src/sim, src/headless and the built CLI do not reference src/extras",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract there are four characters to pick from, and the default one comes first",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract weaver: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
+          "status": "passed"
+        },
+        {
+          "name": "ink: shades dissolve into light, no violence a shade whose ink runs out is removed, leaves a firefly on the ground and gives 30 points",
+          "status": "passed"
+        },
+        {
+          "name": "ink: shades dissolve into light, no violence poison takes exactly 1 ink over 3 seconds",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/io.test.ts",
+      "tests": [
+        {
+          "name": "CLI (built dist/headless/cli.js) --night 4 or 0 is an error (exit 1)",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) a full night of 21,600 ticks finishes in 30 s or less",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) CLI output equals in-process output for the same scenario, inputs and night",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) does not create the output file on error",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) exits 0 and writes the file, for nights 1, 2 and 3",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) malformed JSON in inputs: exit 2 and a message on stderr",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) non-increasing frame ticks, bad scenario, missing file: exit 2",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) stops early when the game ends and still exits 0",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) usage errors (missing --out, unknown option, bad --ticks): exit 1 with a message on stderr",
+          "status": "passed"
+        },
+        {
+          "name": "contract has every key of contract v1.0 plus the v1.1 ones",
+          "status": "passed"
+        },
+        {
+          "name": "contract header fields",
+          "status": "passed"
+        },
+        {
+          "name": "contract the game really uses the declared numbers (night lengths, flames, lanterns, speed, dash)",
+          "status": "passed"
+        },
+        {
+          "name": "contract the standard numbers of Ticket-02 part 1",
+          "status": "passed"
+        },
+        {
+          "name": "contract tuning in game.contract.json is exactly src/sim/tuning.ts",
+          "status": "passed"
+        },
+        {
+          "name": "determinism a different seed gives a different island",
+          "status": "passed"
+        },
+        {
+          "name": "determinism auto-generated ids (shades, drifters, dropped fireflies) repeat across runs",
+          "status": "passed"
+        },
+        {
+          "name": "determinism PRNG: same seed same sequence, values in [0,1)",
+          "status": "passed"
+        },
+        {
+          "name": "determinism same seed + scenario + inputs: identical bytes, in every night",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation accepts frames with only some fields, including dash and pause",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation accepts the new scenario fields",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation an unknown lantern id is ignored",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation drifters and charms in a scenario replace the defaults",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation player scenario counters: invuln_ticks, dash_cd_ticks, pulse_cd_ticks, charm_ticks",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: button not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: dash not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: decreasing tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: duplicate tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: fractional tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: frames missing",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: move not a pair",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: negative tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: not an object",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: pause not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: array",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: charm without id",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: lantern without id",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: motes not array",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: negative ticks",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: pos with 2 numbers",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: random flag not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: unknown drifter state",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: unknown shade state",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: wind flag not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation scenario state fields are used: a shade given as stunned with 30 ticks left is stunned for exactly 30 snapshots",
+          "status": "passed"
+        },
+        {
+          "name": "output format --snapshot-every controls the spacing, from tick 0",
+          "status": "passed"
+        },
+        {
+          "name": "output format drifters and charms are objects of the contract",
+          "status": "passed"
+        },
+        {
+          "name": "output format numbers are rounded to at most 3 decimals",
+          "status": "passed"
+        },
+        {
+          "name": "output format shade states use the contract names",
+          "status": "passed"
+        },
+        {
+          "name": "output format snapshot fields of contract v1.1",
+          "status": "passed"
+        },
+        {
+          "name": "output format the new events have the contract's data",
+          "status": "passed"
+        },
+        {
+          "name": "output format three line types; the first line is the snapshot of tick 0 and exactly one end line is last",
+          "status": "passed"
+        },
+        {
+          "name": "output format tick never goes backwards",
+          "status": "passed"
+        },
+        {
+          "name": "tick model --ticks N runs exactly N steps; the end line says N",
+          "status": "passed"
+        },
+        {
+          "name": "tick model a move longer than 1 is normalised; a frame without move keeps the old one",
+          "status": "passed"
+        },
+        {
+          "name": "tick model events of step k carry tick k+1",
+          "status": "passed"
+        },
+        {
+          "name": "tick model snapshot at tick 0 is the state after the scenario and before any input",
+          "status": "passed"
+        },
+        {
+          "name": "tick model standing still after the input stops: velocity falls to 0 within 0.1 s",
+          "status": "passed"
+        },
+        {
+          "name": "tick model time_left_s = night duration - sim steps / 60",
+          "status": "passed"
+        },
+        {
+          "name": "tick model yaw: move [0,1] with cam_yaw_deg 90 goes along +X",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/maps.test.ts",
+      "tests": [
+        {
+          "name": "Gió Lạc (drifters) a drifter does not chase when Mây carries fewer than 5, or is farther than 15 m",
+          "status": "passed"
+        },
+        {
+          "name": "Gió Lạc (drifters) drifters appear in nights 2 and 3 only, at tick 1200, 2400 ..., at most 2",
+          "status": "passed"
+        },
+        {
+          "name": "Gió Lạc (drifters) idle -> chase when Mây carries 5 or more fireflies within 15 m; touch within 1.2 m steals min(3, carried) and it flees",
+          "status": "passed"
+        },
+        {
+          "name": "Gió Lạc (drifters) it drifts slowly (2 m/s) while idle",
+          "status": "passed"
+        },
+        {
+          "name": "Gió Lạc (drifters) it flees 7 m/s for 240 ticks and then disappears; each drifter steals only once",
+          "status": "passed"
+        },
+        {
+          "name": "Gió Lạc (drifters) Pulse on a chasing drifter makes it flee without stealing; on a fleeing one with loot it drops everything as fireflies",
+          "status": "passed"
+        },
+        {
+          "name": "Gió Lạc (drifters) random_drifters:false keeps them away",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm a bounce pad shoots Mây up at 14 m/s and 24 m/s toward the other island; she lands about 1.4 s later on island B",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm a dash is still possible while flying",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm Bùa Gió: picked like a firefly, 600 ticks, run 7.2 m/s, dash without cooldown (but a new press is needed), back after 2700 ticks",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm charm without dash still: runs 7.2 m/s only while the charm lasts",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm Mây can walk over the bridge from island A to island B",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm stepping off the bridge sideways drops Mây into the clouds: a fall after about 1 s",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm the charm is back after 2700 ticks (45 s) and picking it again restarts the 600 ticks",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm the launch velocity is kept in the air: move keys do not change it",
+          "status": "passed"
+        },
+        {
+          "name": "night 2: bridge, pads, charm the second pad (50,0,-18) sends Mây back toward island A",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind floor 1 cannot be entered from the side (vertical wall)",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind floor 2 is a cliff: walking at it from floor 0 stops Mây at its edge (r = 8) and she stays on the ground",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind floor 2 shades: a shade on the ground below cannot touch Mây standing on floor 1 (height difference 3 m)",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind the bell tower (r = 2) cannot be walked through",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind the pad at (0,3,13) throws Mây toward -Z (12 m/s up, 8 m/s along) and she lands on floor 2 (Y = 6)",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind walking up a ramp reaches floor 1 (Y = 3); walking off the inner edge of floor 1 drops back to Y = 0",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind wind is only on in night 3 by default and wind_enabled:false switches it off",
+          "status": "passed"
+        },
+        {
+          "name": "night 3: floors, cliffs, ramps, pad, tower, wind wind: every 30 s a 5 s gust pushes Mây 2 m/s in one fixed direction; wind {active, dir_deg} in the snapshot",
+          "status": "passed"
+        },
+        {
+          "name": "shades on the other maps every night of random play stays deterministic and valid: motes start at 20, spawn cadence holds",
+          "status": "passed"
+        },
+        {
+          "name": "shades on the other maps night 2 shades spawn on the 16 points of the two islands, 1 every 7 s, at most 8; night 3: every 6 s, at most 10",
+          "status": "passed"
+        },
+        {
+          "name": "shades on the other maps night 3 shades are faster (4.5 m/s)",
+          "status": "passed"
+        },
+        {
+          "name": "shades on the other maps shades cannot cross open air: a shade across the gap beside the bridge stays on its island",
+          "status": "passed"
+        },
+        {
+          "name": "standard maps: geometry night 1 mote points: 8 at r 12 (every 45 deg) and 16 at r 33 (every 22.5 deg)",
+          "status": "passed"
+        },
+        {
+          "name": "standard maps: geometry night 1 shade points: 12 on r 37 at 15, 45, 75 ... degrees",
+          "status": "passed"
+        },
+        {
+          "name": "standard maps: geometry night 1: round island of radius 40, the five standard lanterns",
+          "status": "passed"
+        },
+        {
+          "name": "standard maps: geometry night 2: two islands of radius 28 at (0,0,0) and (70,0,0), a bridge x 26..44, z -2..2, six lanterns",
+          "status": "passed"
+        },
+        {
+          "name": "standard maps: geometry night 3: three floors (Y 0, 3, 6), two ramps, a tower, seven lanterns, 30 mote points, 16 shade points",
+          "status": "passed"
+        },
+        {
+          "name": "standard maps: geometry the ramps rise 3 m between r 30 and r 24 and are 3 m wide",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/rules.test.ts",
+      "tests": [
+        {
+          "name": "falling off the island below Y = -10: -1 flame, all fireflies lost, event with by:fall and lost",
+          "status": "passed"
+        },
+        {
+          "name": "falling off the island happens once per fall, even when invulnerable",
+          "status": "passed"
+        },
+        {
+          "name": "falling off the island the last flame lost in a fall ends the night at once, no respawn",
+          "status": "passed"
+        },
+        {
+          "name": "falling off the island waits 60 ticks, then respawns at the start with zero velocity and 90 ticks of invulnerability",
+          "status": "passed"
+        },
+        {
+          "name": "falling off the island while waiting, shades cannot hurt and fireflies are not picked up",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades a shade at 12 m (XZ) starts to chase at once, at 12.1 m it keeps wandering; it gives up beyond 18 m",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades a shade that is 1.5+ m above or below Mây's feet cannot touch her",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades a touch costs a flame, drops floor(carried/2) fireflies on a ring 1.5-2.5 m away, starts 90 ticks of invulnerability and a 60-tick recoil",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades dropped fireflies vanish after 480 ticks",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades hit while invulnerable does nothing; losing the last flame loses at once",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades new shades start at one of the 12 points (15, 45, 75... degrees)",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades recoil moves the shade 2 m away in 60 ticks and invulnerability lasts exactly 90 ticks (hits at ticks 1, 91, 181)",
+          "status": "passed"
+        },
+        {
+          "name": "Ink Shades spawns: 2 at tick 300 (state spawning for 60 ticks), then 1 every 480 ticks, on the ring of radius 37, at least 15 m from Mây",
+          "status": "passed"
+        },
+        {
+          "name": "motes 20 fireflies at 20 different points at the start; cap 30; one more at ticks 240, 480...",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns 10 fireflies light a lantern: deposit + lantern_lit, +100 for the lantern",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns a lit lantern takes nothing more; the nearest unlit one is chosen, ties go to the smaller id",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns capacity is 10: with 9 carried only one of two motes in range is taken",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns interact radius is 2.0 m: 2.0 works, 2.1 does not",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns partial deposits: min(carried, missing) into the nearest unlit lantern",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns picking up gives no points; depositing gives 10 per firefly",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns pickup needs XZ <= 1.0 m and a height difference <= 1.5 m",
+          "status": "passed"
+        },
+        {
+          "name": "motes start points are on the 8 + 16 standard points (r 12 every 45 degrees, r 33 every 22.5 degrees)",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) an in-air dash keeps its height",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) dash direction: the move direction, or the way Mây faces (+Z at the start) when standing still",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) dash is not invulnerable",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) dash: 14 m/s for 12 ticks (2.8 m), event dash, cooldown 1.5 s from the start of the dash",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) full speed in 0.1 s: 1 m/s more every tick, then 6 m/s; 345/60 = 5.75 m after 60 ticks",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) jump only fires on false->true: holding the button does not jump again",
+          "status": "passed"
+        },
+        {
+          "name": "movement (Ticket-02 part 1) jump: 7 m/s up, gravity 20, only from the ground; peak about 1.167 m, lands after 41 ticks",
+          "status": "passed"
+        },
+        {
+          "name": "night chain durations 300 / 330 / 360 s and lantern counts 5 / 6 / 7",
+          "status": "passed"
+        },
+        {
+          "name": "night chain night_start {night} is the first event of a run",
+          "status": "passed"
+        },
+        {
+          "name": "pause cooldowns do not tick while paused",
+          "status": "passed"
+        },
+        {
+          "name": "pause events paused/resumed; the resume tick already runs normally",
+          "status": "passed"
+        },
+        {
+          "name": "pause input edges still count: the pause button needs a false->true change",
+          "status": "passed"
+        },
+        {
+          "name": "pause while paused: state 'paused', tick keeps counting, sim_tick, time and positions stand still",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) a shade on top of Mây is pushed toward +X",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) cooldown is 3 s from the press; a second pulse refreshes stun and push; fewer than 3 fireflies do nothing",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) costs 3 fireflies; hits shades within 5 m (3D, from feet + 0.8 m); +5 points for each",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) it kills nothing and does not stun shades that are only 'spawning'... they stay shades",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) pulse cooldown is shown in seconds",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) pushes the shade 4 m away horizontally within 15 ticks (4/15 m per tick)",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) stun lasts 120 ticks (snapshots 1..120 show stunned)",
+          "status": "passed"
+        },
+        {
+          "name": "Pulse (Tỏa Sáng) the 3D distance counts: a shade exactly 5.0 m away is in, one just beyond is out",
+          "status": "passed"
+        },
+        {
+          "name": "safe zone a lit lantern keeps shades out of 6 m; one that is waiting at the rim never gets in",
+          "status": "passed"
+        },
+        {
+          "name": "safe zone an unlit lantern gives no protection",
+          "status": "passed"
+        },
+        {
+          "name": "safe zone lighting a lantern pushes shades inside 6 m out to the rim within 30 ticks, harmlessly",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score all lanterns pre-lit by the scenario wins on the first tick without scoring for them",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score lighting the last lantern wins at the end of that tick; score = 10/firefly + 100/lantern + 2*floor(seconds left) + 50*flames",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score no flames beats a win or a dawn on the same tick",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score starts with 3 flames; night 1 lasts 300 s",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score time out with unlit lanterns loses with reason dawn at tick 120",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score winning on the very tick the time runs out is still a win",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/steer.test.ts",
+      "tests": [
+        {
+          "name": "click-to-move steering does not overshoot: the last step is shorter",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering standing on the point = arrived, no move",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering walks in a straight line (no wiggle): after the 0.1 s start-up every tick moves exactly speed*dt",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw -60 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 0 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 135 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 180 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 250 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 37 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 90 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        }
+      ]
+    }
+  ]
+}
