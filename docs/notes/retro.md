@@ -1,8 +1,17 @@
-# Retro
+# Retro (Phases 1 to 4)
 
-Filled in at the end of the lab (Phase 4).
+**Evaluation of the four phases.** Phase 1: a fresh reviewer subagent found 15 problems (pulse order, weak tests, no boundary tests); all but three documented risks were fixed. Phase 2: the review found 13 items and 62 of 83 mutants killed; I fixed shade-hit data, the charm dash, the respawn tick and `end.state`, and added boundary tests. Phase 3: 62 of 85 mutants killed; I added ranking, boundary and `ever_lit` tests and corrected two wrong notes and a 3 Hz blink that should have been 1 Hz. Phase 4: no independent review yet; I ran the benchmark and soak myself (see `bench.json`, `soak.json`) and checked the UI by hand in a browser (`docs/notes/phase-4-manual-checks.md`). Evidence from `npm run evidence` was 24/24 (phase 2), 30/30 (phase 3) and for phase 4 see `docs/evidence/phase-4/README.md`, including the rows that are not met.
 
-- What worked:
-- What did not:
-- What I would change in the harness:
-- How well I can explain the code (honest):
+**What worked with AI.** Writing the rules as scenario files and tests first, so a rule change costs one 1-second test run. A reviewer with a fresh context that mutates the code: it found tests that could not fail, which my own tests missed three times. Python scripts that generate many scenario files from one table. Short Stop-hook feedback (`npm run check`) kept the tree green.
+
+**What did not.** The AI often wrote a test from what the program printed, or for a rule it had misread (see `docs/notes/ai-errors.md`, 18 rows). It reported the lab pages as unreleased because it could not read a cross-origin frame. Long sessions ran out of context and had to be summarised, which lost details. A second session forked from mine duplicated work (two reviewers on the same commit) until I split the ownership of the `phase-3` tag.
+
+**AI mistakes and how I caught them.** Examples: a test for the exactly-30 fuel boundary that ran 40 ticks while the lantern kept burning; Enter in the name box starting the next night because a key handler blurred the field first (found by typing in the browser); fonts below 18 px in the champion cards (found by a script that reads every computed font size); wrong claims in my own notes (the float rounding of 0.6 x 5, a missing 2 m range) found by the reviewer. Mutation testing and looking at the real screen caught what reading the code did not.
+
+**Harness that helped most.** `AGENTS.md` rules ("derive expected values from the spec", "never edit evidence by hand") and the evidence script whose assertions decide pass or fail; the Stop hook second; the reviewer agent third.
+
+**Tokens and cost.** About 2 million tokens in total by my estimate (`docs/notes/ai-usage-log.md`; the real numbers are only in the Claude app). I saved tokens by writing each file once, reading test output with `tail`, reading generated evidence instead of JSONL, generating scenarios with scripts, and letting subagents work in their own clones and return one report. I did not measure the cost in money.
+
+**What I would change.** Start each phase by writing the requirement list and the weak-point tests before the code; run the reviewer earlier on a smaller diff; keep one session per phase so tags and branches are not shared; benchmark on a quiet machine from the start (my first 30 s run was 54 fps while another job was running, the quiet runs were 90 to 145 fps); and record the demo video while the game still matches the README.
+
+**Honest note on understanding.** I can explain the sim rules, the tick order and the evidence script. I understand the Three.js renderer and the bench runner less well, and I have not played all three nights by hand to the end in this lab.

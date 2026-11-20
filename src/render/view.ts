@@ -62,6 +62,8 @@ export class View {
   private lastPos = new THREE.Vector3();
   private camPos = new THREE.Vector3(0, 6, -9);
   private time = 0;
+  private tmpSky = new THREE.Color();
+  private tmpFog = new THREE.Color();
   private clouds: THREE.Mesh[] = [];
   colorBlind = false;
   /** no flicker, bobbing, blinking, flashes or wind leaves (Settings > Reduce motion) */
@@ -570,7 +572,7 @@ export class View {
 
     // ambient light grows with the lit lanterns: 0.15 + 0.55 * (lit / total)
     this.ambient.intensity = (0.15 + 0.55 * ratio) * 2.4 + 0.5;
-    const sky = new THREE.Color(PAL.sky).lerp(new THREE.Color(PAL.fog), ratio);
+    const sky = this.tmpSky.setHex(PAL.sky).lerp(this.tmpFog.setHex(PAL.fog), ratio);
     (this.scene.background as THREE.Color).copy(sky);
     (this.scene.fog as THREE.FogExp2).color.copy(sky);
     for (const c of this.clouds) c.position.x += Math.sin(t * 0.1 + c.position.z) * dt * 0.4;

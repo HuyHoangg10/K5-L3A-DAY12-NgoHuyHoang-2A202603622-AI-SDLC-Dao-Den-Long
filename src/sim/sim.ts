@@ -643,6 +643,7 @@ export class Sim {
   }
   /** Lanterns that have a safe zone: lit, and with at least low_fuel_threshold fuel (exactly 30 still counts). */
   private litLanterns(): Lantern[] {
+    if (this.litCache) return this.litCache; // moveShades does not change lanterns, so one list serves every shade
     return this.lanterns.filter((l) => l.lit && l.fuel60 >= T.low_fuel_threshold * C.fuel_units);
   }
   private keepOutOfLit(s: Shade): void {
@@ -717,7 +718,17 @@ export class Sim {
     return true;
   }
 
+  private litCache: Lantern[] | null = null;
   private moveShades(): void {
+    this.litCache = null;
+    this.litCache = this.litLanterns();
+    try {
+      this.moveShadesInner();
+    } finally {
+      this.litCache = null;
+    }
+  }
+  private moveShadesInner(): void {
     const P = this.player;
     const speed = this.def.shadeSpeed * DT;
     for (const s of this.shades) {

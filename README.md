@@ -6,6 +6,10 @@ A small 3D night game in three nights. Dark mist has swallowed the lights of an 
 
 Everything is built from Three.js shapes, lights and WebAudio synthesis, no downloaded assets. The game rules are plain TypeScript in `src/sim/` and are used both by the 3D game and by the headless mode.
 
+![Night 1: three lanterns burning, one of them low on fuel](docs/img/night1.png)
+
+![The main menu with the four characters](docs/img/menu.png)
+
 ## Run it (3 commands)
 
 Needs Node 20 or newer (Node 22 is what the CI uses).
@@ -134,6 +138,20 @@ The contract for the grader is in `game.contract.json` (`tuning` equals `src/sim
 - `fall_enabled` is `true`: falling below Y = -10 costs a flame and all fireflies, then you respawn after 1 s.
 - **Fuel is counted in 1/60 units** inside the sim so a lantern loses exactly 1 fuel per 60 ticks with no rounding drift; the output shows one decimal. A lantern with exactly 30 fuel still has its safe zone, with 29.98 it does not.
 
+## Benchmark and soak (Phase 4)
+
+```
+npm run build
+npm run bench      # node scripts/bench.mjs --seed 42 --duration 30 --out bench.json
+npm run soak       # node --expose-gc dist/headless/soak.js --seed 7 --nights 10 --out soak.json
+```
+
+**Benchmark.** `scripts/bench.mjs` serves the build, opens it in Chrome or Edge (headless, 1280x720, vsync and the frame limiter switched off with `--disable-gpu-vsync --disable-frame-rate-limit`; pass `--headed` for a normal window, `--browser <path>` or the `CHROME_PATH` variable if the browser is not found), and the page plays the standard scene: night 1, 200 Ink Shades and 100 fireflies, lanterns L1-L3 lit with 100 fuel, nothing spawns, nobody gets hurt, nothing is picked up, fuel does not burn, the night does not end, Mây stands at the centre and the camera circles it (radius 30, height 15, one lap per 15 s) after 3 s of warm-up. My own champions and skill effects are not in that scene. It writes `bench.json` with `avg_fps`, `p1_low_fps`, `frame_ms_p95`, `frames`, `load_ms`, `peak_mem_mb`, `vsync_off`, `renderer`, `os`. Two things to know: `peak_mem_mb` is the JavaScript heap of the page, because a web page cannot read the memory of the browser process (the file says so); and `vsync_off: true` means the switches were passed, I cannot read back whether the graphics driver obeyed.
+
+My committed run: **119.6 fps average, 40.8 fps 1% low, p95 13.6 ms, load 1196 ms** on `Windows_NT 10.0.26300 x64; 12th Gen Intel(R) Core(TM) i5-12500H x16; 7.7 GiB RAM; chrome.exe 158.0.8127.36 (headless=new)`, renderer `three.js r187 (WebGL2) on ANGLE (Intel, Intel(R) UHD Graphics (0x00004626) Direct3D11 vs_5_0 ps_5_0, D3D11)` (a laptop with an integrated GPU, with other programs open). The runs vary: other runs on the same machine gave 91 to 145 fps average and 28 to 37 fps for the 1% low, so the 1% low threshold (30) is close and can be missed on a bad run. The ticket's thresholds (average above 60, 1% low above 30, load under 10 s) are checked in `docs/evidence/phase-4/README.md`: read the result there, I do not claim it here.
+
+**Soak.** `dist/headless/soak.js` plays 10 nights in one process (night 1, 2, 3, 1, ... with seed 7 + i) with random inputs and writes the number of crashes, the results, and the process memory after the first night is loaded and after the last one is reset (a short warm-up run and a forced garbage collection come first so start-up cost is not counted as a leak). The committed `soak.json`: 0 crashes, memory 48 MB -> 49.4 MB, 0.2 s. The random players lose every night within a few seconds of game time, so the run is short.
+
 ## Characters
 
 Everything below the default character is live-game only. It lives in `src/extras/` and is wired in by `src/render/game.ts`; `src/sim` and `src/headless` never import it, so **headless mode does not contain it**. `npm run evidence:extras` re-runs every scenario and checks that the output is byte-identical to the files recorded in `docs/evidence/phase-2`.
@@ -176,9 +194,11 @@ The rules of every kit are tested in `tests/extras.test.ts`, `tests/champions.te
 ## Repository map
 
 - `src/extras/`: the card skills (live mode only)
-- `docs/spec/`: the Phase 1 spec (copied as given), the Phase 2 spec (my transcription of Ticket-02) and its acceptance criteria
+- `docs/spec/`: the Phase 1 spec (copied as given), the Phase 2, 3 and 4 specs (my transcriptions of Ticket-02, -03, -04) and the Phase 2 acceptance criteria
 - `docs/notes/`: assumptions, AI usage log, where the AI was wrong, evaluation, retro
-- `docs/evidence/`: generated evidence (`phase-1/`, `phase-2/README.md` is the table), `harness-check.md` for the hooks
+- `docs/evidence/`: generated evidence (`phase-1/` to `phase-4/`, each `README.md` is the table), `harness-check.md` for the hooks
+- `bench.json`, `soak.json`: the committed Phase 4 runs
+- `docs/img/`: screenshots; `docs/notes/phase-4-manual-checks.md`: what I checked by hand
 - `AGENTS.md`, `CLAUDE.md`, `.claude/`, `scripts/hooks/`: the AI harness
 - `docs/lab-brief/`: the lab's own files (README, rules, rubric, guide)
 - `CREDITS.md`, `LICENSE` (MIT)
