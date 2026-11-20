@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lantern Island - Dao Den Long</title>
+    <style>
+      :root {
+        --ink: #0b0f26;
+        --panel: rgba(14, 18, 46, 0.72);
+        --gold: #ffc766;
+        --amber: #ff9a3c;
+        --text: #fbeed2;
+        --violet: #a56bff;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden; font-family: "Trebuchet MS", system-ui, sans-serif; color: var(--text); }
+      #stage { position: fixed; inset: 0; }
+      #stage canvas { display: block; width: 100%; height: 100%; }
+      #hud { position: fixed; top: 14px; left: 14px; display: grid; gap: 8px; pointer-events: none; min-width: 210px; }
+      .panel { background: var(--panel); border: 1px solid rgba(255, 199, 102, 0.28); border-radius: 12px; padding: 8px 12px; backdrop-filter: blur(4px); }
+      .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 15px; line-height: 1.7; }
+      .row b { color: var(--gold); font-variant-numeric: tabular-nums; }
+      .flames { letter-spacing: 3px; color: var(--amber); text-shadow: 0 0 8px rgba(255, 154, 60, 0.8); }
+      .flames .out { color: #4b3f55; text-shadow: none; }
+      .bar { height: 6px; background: rgba(255, 255, 255, 0.12); border-radius: 4px; overflow: hidden; margin-top: 2px; }
+      .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--amber), var(--gold)); }
+      #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 20px; background: var(--panel); border: 1px solid rgba(255, 199, 102, 0.35); opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+      #toast.show { opacity: 1; }
+      #hint { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 13px; opacity: 0.8; background: var(--panel); border-radius: 10px; padding: 6px 14px; pointer-events: none; text-align: center; }
+      #flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(80, 20, 130, 0) 40%, rgba(90, 30, 150, 0.55) 100%); opacity: 0; transition: opacity 0.4s; }
+      #flash.on { opacity: 1; transition: none; }
+      .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(6, 8, 24, 0.62); text-align: center; }
+      .overlay.show { display: grid; }
+      .card { max-width: 460px; padding: 26px 32px; background: rgba(16, 20, 52, 0.92); border: 1px solid rgba(255, 199, 102, 0.4); border-radius: 18px; box-shadow: 0 0 40px rgba(255, 154, 60, 0.18); }
+      .card h1 { margin: 0 0 6px; font-size: 28px; color: var(--gold); }
+      .card p { margin: 8px 0; line-height: 1.5; }
+      .card .score { font-size: 22px; color: var(--gold); }
+      .card table { margin: 10px auto; border-collapse: collapse; font-size: 14px; }
+      .card td { padding: 2px 10px; text-align: left; }
+      .card td:last-child { text-align: right; color: var(--gold); font-variant-numeric: tabular-nums; }
+      button { margin-top: 12px; font: inherit; font-size: 16px; padding: 9px 22px; border-radius: 22px; border: 0; cursor: pointer; background: linear-gradient(180deg, var(--gold), var(--amber)); color: #2b1600; }
+      button:hover { filter: brightness(1.08); }
+      kbd { background: rgba(255, 255, 255, 0.14); border-radius: 4px; padding: 0 5px; font-family: inherit; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="flash"></div>
+    <div id="hud">
+      <div class="panel">
+        <div class="row"><span>Flames</span><span class="flames" id="hud-flames"></span></div>
+        <div class="row"><span>Fireflies</span><b id="hud-carried">0 / 10</b></div>
+        <div class="row"><span>Lanterns lit</span><b id="hud-lit">0 / 5</b></div>
+        <div class="row"><span>Score</span><b id="hud-score">0</b></div>
+        <div class="row"><span>Until dawn</span><b id="hud-time">4:00</b></div>
+        <div class="row"><span>Glow</span><span style="flex: 1"><div class="bar"><i id="hud-glow"></i></div></span></div>
+      </div>
+    </div>
+    <div id="toast"></div>
+    <div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows move &middot; <kbd>Space</kbd> jump &middot; <kbd>E</kbd> put fireflies in a lantern &middot; <kbd>Q</kbd> / <kbd>F</kbd> glow &middot; drag mouse to turn camera &middot; <kbd>R</kbd> restart</div>
+    <div class="overlay show" id="start">
+      <div class="card">
+        <h1>Lantern Island</h1>
+        <p>Dark mist has swallowed the lights of the island. You are <b>Mây</b>, the youngest lamp keeper. Gather fireflies and bring them to the five big lanterns before dawn.</p>
+        <p>Ink Shades hunt in the dark. Keep moving, stay near the lanterns, and glow to push them away.</p>
+        <button id="start-btn">Begin the night (Space)</button>
+      </div>
+    </div>
+    <div class="overlay" id="end">
+      <div class="card">
+        <h1 id="end-title"></h1>
+        <p id="end-text"></p>
+        <p class="score">Score <span id="end-score"></span></p>
+        <table id="end-table"></table>
+        <button id="end-btn">Play again (R)</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
