@@ -1,79 +1,127 @@
+import { nightDef, supportAt, topAt, type Night, type NightDef } from "./maps";
 import { r3 } from "./output";
 import { Rng } from "./rng";
 import { CONSTANTS as C, DT, TUNING as T } from "./tuning";
-import type { FrameInput, InputFrame, Lantern, Mote, Scenario, Shade, SimEvent, SimState, Vec3 } from "./types";
+import type { Charm, Drifter, FrameInput, InputFrame, Lantern, Mote, Scenario, Shade, ShadeState, SimEvent, SimState, Vec3 } from "./types";
 
 const EPS = C.eps;
-const dist2d = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
-// +1 because the pulse step itself also runs updateShades, which burns one stun tick
-const stunTicks = Math.round(T.pulse_stun_s * C.tick_rate) + 1;
-const invulnTicks = Math.round(T.invuln_s * C.tick_rate);
-const cooldownTicks = Math.round(T.pulse_cooldown_s * C.tick_rate);
+const dist2d = (a: ArrayLike<number>, b: ArrayLike<number>): number => Math.hypot((a[0] as number) - (b[0] as number), (a[2] as number) - (b[2] as number));
+const dist3d = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+const unit2 = (dx: number, dz: number): [number, number] => {
+  const d = Math.hypot(dx, dz);
+  return d > EPS ? [dx / d, dz / d] : [1, 0]; // same position: +X
+};
+const idNum = (id: string): number => Number(id.slice(1));
 
 export interface SimOptions {
   seed: number;
+  night?: Night;
   scenario?: Scenario;
 }
 
+interface PlayerState {
+  pos: Vec3;
+  vel: Vec3;
+  flames: number;
+  carried: number;
+  grounded: boolean;
+  invuln: number; // ticks left
+  dashCd: number;
+  pulseCd: number;
+  charm: number;
+  dashTicks: number;
+  dashDir: [number, number];
+  facing: [number, number];
+  launched: boolean; // flying from a bounce pad: horizontal velocity is locked until landing
+  launchVel: [number, number];
+  fallWait: number; // ticks left of the "fell off the island" wait; 0 = playing
+}
+
 /**
- * Fixed-step game logic. One call to step() is one 1/60 s tick.
- * Step order: input -> move/jump -> interact -> pulse -> shades spawn+move -> pickup -> hit -> end checks.
+ * Fixed-step game logic (contract v1.1). One call to step() is one 1/60 s tick.
+ * Order inside a tick (Ticket-02): pause/input -> counters -> move Mây -> pickups -> lantern -> safe zones -> pulse
+ * -> shades and drifters move -> touches -> spawns -> win/lose.
  * No Date, no Math.random, no DOM: same seed + scenario + inputs gives the same run.
  */
 export class Sim {
-  steps = 0;
-  state: SimState = "playing";
+  tick = 0; // every step, also while paused
+  simTick = 0; // gameplay steps (paused steps do not count)
+  status: "playing" | "won" | "lost" = "playing";
+  paused = false;
   score = 0;
-  readonly player: { pos: Vec3; vy: number; flames: number; carried: number } = {
-    pos: [0, 0, 0],
-    vy: 0,
-    flames: T.flames,
-    carried: 0,
-  };
+  readonly night: Night;
+  readonly def: NightDef;
+  readonly player: PlayerState;
   lanterns: Lantern[] = [];
   motes: Mote[] = [];
   shades: Shade[] = [];
+  drifters: Drifter[] = [];
+  charms: Charm[] = [];
   events: SimEvent[] = []; // events of the most recent step()
   readonly timeLeftStart: number;
+  windActive = false;
+  windDirDeg = 0;
 
   private rngMotes: Rng;
   private rngShades: Rng;
+  private rngDrop: Rng;
+  private rngDrift: Rng;
+  private rngWind: Rng;
   private nextMote = 1;
   private nextShade = 1;
+  private nextDrifter = 1;
+  private randomMotes: boolean;
   private randomShades: boolean;
-  private input: FrameInput = { move: [0, 0], camYawDeg: 0, jump: false, interact: false, pulse: false };
-  private prev = { jump: false, interact: false, pulse: false };
-  private invuln = 0;
-  private cooldown = 0;
-  private spawnTimer: number; // ticks until next random shade
+  private randomDrifters: boolean;
+  private windEnabled: boolean;
+  private input: FrameInput = { move: [0, 0], camYawDeg: 0, jump: false, interact: false, pulse: false, dash: false, pause: false };
+  private prev = { jump: false, interact: false, pulse: false, dash: false, pause: false };
+  private started = false;
+  private usedDrifters = new Set<string>();
+  private litNow: Lantern[] = [];
+  private windDir: [number, number] = [1, 0];
 
   constructor(opts: SimOptions) {
     const sc = opts.scenario ?? {};
+    this.night = opts.night ?? 1;
+    this.def = nightDef(this.night);
     this.rngMotes = new Rng(opts.seed);
     this.rngShades = new Rng((opts.seed ^ 0x9e3779b9) >>> 0);
+    this.rngDrop = new Rng((opts.seed ^ 0x85ebca6b) >>> 0);
+    this.rngDrift = new Rng((opts.seed ^ 0xc2b2ae35) >>> 0);
+    this.rngWind = new Rng((opts.seed ^ 0x27d4eb2f) >>> 0);
+    this.randomMotes = sc.random_motes ?? true;
     this.randomShades = sc.random_shades ?? true;
-    this.timeLeftStart = sc.time_left_s ?? T.night1_duration_s;
-    this.spawnTimer = Math.round(C.shade_first_spawn_s * C.tick_rate);
-
-    // default lanterns L1..L5 on a ring, L1 straight ahead (+Z)
-    for (let i = 0; i < T.lantern_count_night1; i++) {
-      const a = (i / T.lantern_count_night1) * Math.PI * 2;
-      this.lanterns.push({
-        id: `L${i + 1}`,
-        pos: [r3(C.lantern_ring_radius * Math.sin(a)), 0, r3(C.lantern_ring_radius * Math.cos(a))],
-        lit: false,
-        deposited: 0,
-      });
-    }
+    this.randomDrifters = sc.random_drifters ?? true;
+    this.windEnabled = sc.wind_enabled ?? this.def.windEnabled;
+    this.timeLeftStart = sc.time_left_s ?? T[this.def.duration_key];
 
     const p = sc.player ?? {};
-    if (p.pos) this.player.pos = [...p.pos];
-    if (p.carried !== undefined) this.player.carried = p.carried;
-    if (p.flames !== undefined) this.player.flames = p.flames;
+    const start: Vec3 = p.pos ? [...p.pos] : [...this.def.start];
+    this.player = {
+      pos: start,
+      vel: [0, 0, 0],
+      flames: p.flames ?? T.flames,
+      carried: p.carried ?? 0,
+      grounded: false,
+      invuln: p.invuln_ticks ?? 0,
+      dashCd: p.dash_cd_ticks ?? 0,
+      pulseCd: p.pulse_cd_ticks ?? 0,
+      charm: p.charm_ticks ?? 0,
+      dashTicks: 0,
+      dashDir: [0, 1],
+      facing: [0, 1],
+      launched: false,
+      launchVel: [0, 0],
+      fallWait: 0,
+    };
+    const sup = supportAt(this.def, start[0], start[2], start[1], C.step_height);
+    this.player.grounded = sup !== null && Math.abs(start[1] - sup) < 1e-6;
 
+    for (const l of this.def.lanterns) this.lanterns.push({ id: l.id, pos: [...l.pos], lit: false, deposited: 0 });
     for (const sl of sc.lanterns ?? []) {
       const l = this.lanterns.find((x) => x.id === sl.id);
-      if (!l) continue; // unknown id: ignored, the island always has exactly L1..L5
+      if (!l) continue; // unknown id: ignored
       if (sl.pos) l.pos = [...sl.pos];
       if (sl.deposited !== undefined) l.deposited = sl.deposited;
       if (sl.lit !== undefined) {
@@ -83,56 +131,108 @@ export class Sim {
     }
 
     if (sc.motes) {
-      for (const m of sc.motes) this.motes.push({ id: `M${this.nextMote++}`, pos: [...m] });
-    } else if (sc.random_motes ?? true) {
-      this.randomMotes();
+      for (const m of sc.motes) this.motes.push({ id: `M${this.nextMote++}`, pos: [...m], kind: "random", ttl: null });
+    } else if (this.randomMotes) {
+      const pts = [...this.def.motePoints];
+      for (let i = 0; i < C.mote_initial && pts.length; i++) {
+        const k = Math.floor(this.rngMotes.next() * pts.length);
+        const pt = pts.splice(k, 1)[0] as Vec3;
+        this.motes.push({ id: `M${this.nextMote++}`, pos: [...pt], kind: "random", ttl: null });
+      }
     }
+
     for (const s of sc.shades ?? []) {
-      const id = s.id ?? this.freshShadeId();
-      this.shades.push({ id, pos: [...s.pos], stunTicks: 0 });
+      const sh = this.newShade(s.id ?? this.freshShadeId(), [...s.pos]);
+      sh.spawnTicks = 0;
+      const st = s.state ?? "wander";
+      if (st === "chase" || st === "wander") sh.mode = st;
+      else if (st === "stunned") sh.stunTicks = s.state_ticks_left ?? C.pulse_stun_ticks;
+      else if (st === "recoil") {
+        sh.recoilTicks = s.state_ticks_left ?? C.recoil_ticks;
+        sh.recoilDir = [1, 0];
+      } else if (st === "spawning") sh.spawnTicks = s.state_ticks_left ?? C.spawning_ticks;
+      this.shades.push(sh);
     }
+
+    for (const d of sc.drifters ?? []) {
+      const dr = this.newDrifter(d.id ?? this.freshDrifterId(), [...d.pos]);
+      dr.state = d.state ?? "idle";
+      dr.stolen = d.stolen ?? 0;
+      if (dr.state === "flee") dr.fleeTicks = C.drifter_flee_ticks;
+      this.drifters.push(dr);
+    }
+
+    const defaults = this.def.charms.map((c) => ({ id: c.id, pos: [...c.pos] as Vec3 }));
+    if (sc.charms) {
+      this.charms = sc.charms.map((c) => ({
+        id: c.id,
+        pos: c.pos ? ([...c.pos] as Vec3) : ((defaults.find((x) => x.id === c.id)?.pos ?? [0, 0, 0]) as Vec3),
+        available: c.available ?? true,
+        respawn: c.respawn_ticks ?? 0,
+      }));
+    } else this.charms = defaults.map((c) => ({ id: c.id, pos: c.pos, available: true, respawn: 0 }));
   }
 
+  // ---- read-only views used by output, the champion kits and the renderer ----------------------------------
+  get state(): SimState {
+    return this.status === "playing" && this.paused ? "paused" : this.status;
+  }
   get timeLeft(): number {
-    return Math.max(0, this.timeLeftStart - this.steps / C.tick_rate);
+    return Math.max(0, this.timeLeftStart - this.simTick / C.tick_rate);
   }
   get litCount(): number {
     return this.lanterns.filter((l) => l.lit).length;
   }
-  shadeState(s: Shade): "chase" | "stunned" {
-    return s.stunTicks > 0 ? "stunned" : "chase";
+  /** true during the 2 s before a gust (for the leaves and the sound) */
+  get windWarning(): boolean {
+    if (!this.windEnabled) return false;
+    const phase = this.simTick % C.wind_every_ticks;
+    return phase >= C.wind_every_ticks - C.wind_warn_ticks;
+  }
+  get capacity(): number {
+    return T.carry_capacity;
   }
   /** Ticks left on the pulse cooldown (for the HUD). */
   get cooldownLeft(): number {
-    return this.cooldown;
+    return this.player.pulseCd;
   }
   get invulnerable(): boolean {
-    return this.invuln > 0;
+    return this.player.invuln > 0;
+  }
+  shadeState(s: Shade): ShadeState {
+    if (s.stunTicks > 0) return "stunned";
+    if (s.recoilTicks > 0) return "recoil";
+    if (s.spawnTicks > 0) return "spawning";
+    return s.mode;
+  }
+  /** ticks left of the timed state (stunned / recoil / spawning), 0 otherwise */
+  stateTicksLeft(s: Shade): number {
+    return s.stunTicks > 0 ? s.stunTicks : s.recoilTicks > 0 ? s.recoilTicks : s.spawnTicks;
   }
 
-  private randomMotes(): void {
-    for (let n = 0; n < C.random_mote_count; n++) {
-      let pos: Vec3 = [0, 0, 0];
-      for (let attempt = 0; attempt < 50; attempt++) {
-        const a = this.rngMotes.next() * Math.PI * 2;
-        const r = Math.sqrt(this.rngMotes.next()) * (C.island_radius - 5);
-        pos = [r3(r * Math.sin(a)), 0, r3(r * Math.cos(a))];
-        const farFromLanterns = this.lanterns.every((l) => dist2d(l.pos, pos) > T.safe_radius + 1);
-        if (dist2d(pos, [0, 0, 0]) >= C.mote_min_player_dist && farFromLanterns) break;
-      }
-      this.motes.push({ id: `M${this.nextMote++}`, pos });
-    }
+  private newShade(id: string, pos: Vec3): Shade {
+    return { id, pos, mode: "wander", stunTicks: 0, recoilTicks: 0, spawnTicks: C.spawning_ticks, push: null, recoilDir: null, pushOut: 0 };
   }
-
+  private newDrifter(id: string, pos: Vec3): Drifter {
+    return { id, pos, state: "idle", stolen: 0, fleeTicks: 0, dir: [1, 0], driftTicks: 0, fleeDir: null };
+  }
   private freshShadeId(): string {
     for (;;) {
       const id = `S${this.nextShade++}`;
       if (!this.shades.some((s) => s.id === id)) return id;
     }
   }
-
+  private freshDrifterId(): string {
+    for (;;) {
+      const id = `D${this.nextDrifter++}`;
+      if (!this.drifters.some((s) => s.id === id)) return id;
+    }
+  }
   private emit(name: string, data: Record<string, unknown>): void {
-    this.events.push({ tick: this.steps, name, data });
+    this.events.push({ tick: this.tick, name, data });
+  }
+  private groundAt(x: number, z: number, y: number, reach: number = C.step_height): number | null {
+    return supportAt(this.def, x, z, y, reach);
   }
 
   /** Apply one input frame: only fields present in the frame change. */
@@ -142,6 +242,8 @@ export class Sim {
     if (f.jump !== undefined) this.input.jump = f.jump;
     if (f.interact !== undefined) this.input.interact = f.interact;
     if (f.pulse !== undefined) this.input.pulse = f.pulse;
+    if (f.dash !== undefined) this.input.dash = f.dash;
+    if (f.pause !== undefined) this.input.pause = f.pause;
   }
 
   /** Live (render) mode: replace the whole input state. */
@@ -149,37 +251,58 @@ export class Sim {
     this.input = { ...i, move: [i.move[0], i.move[1]] };
   }
 
-  /** Advance one tick (reads the current input state). Returns false if the game was already over. */
+  /** Advance one tick. Returns false if the game was already over. */
   step(): boolean {
     this.events = [];
-    if (this.state !== "playing") return false;
-    const k = this.steps; // this step reads input of tick k and produces state k+1
-    this.steps = k + 1;
+    if (this.status !== "playing") return false;
+    this.tick += 1;
     const inp = this.input;
-    const jumpEdge = inp.jump && !this.prev.jump;
-    const interactEdge = inp.interact && !this.prev.interact;
-    const pulseEdge = inp.pulse && !this.prev.pulse;
-    this.prev = { jump: inp.jump, interact: inp.interact, pulse: inp.pulse };
+    const edge = {
+      jump: inp.jump && !this.prev.jump,
+      interact: inp.interact && !this.prev.interact,
+      pulse: inp.pulse && !this.prev.pulse,
+      dash: inp.dash && !this.prev.dash,
+      pause: inp.pause && !this.prev.pause,
+    };
+    this.prev = { jump: inp.jump, interact: inp.interact, pulse: inp.pulse, dash: inp.dash, pause: inp.pause };
 
-    this.movePlayer(jumpEdge);
-    if (interactEdge) this.interact();
-    if (this.lanterns.every((l) => l.lit)) {
-      this.finish("won", "all_lit");
+    if (!this.started) {
+      this.started = true;
+      this.emit("night_start", { night: this.night });
+    }
+    if (edge.pause) {
+      this.paused = !this.paused;
+      this.emit(this.paused ? "paused" : "resumed", {});
+      if (this.paused) return true;
+    } else if (this.paused) {
       return true;
     }
-    if (this.cooldown > 0) this.cooldown--;
-    if (pulseEdge) this.pulse(); // acts on the shade positions of the previous snapshot, then shades move
-    this.updateShades();
-    this.pickup();
-    this.hitCheck();
+    this.simTick += 1;
+
+    this.countdown();
+    this.updateWind();
+    const waiting = this.player.fallWait > 0;
+    this.litNow = [];
+    if (!waiting) {
+      this.movePlayer(edge.jump, edge.dash);
+      this.pickups();
+      if (edge.interact) this.interact();
+      this.safeZones();
+      if (edge.pulse) this.pulse();
+    }
+    this.moveShades();
+    this.moveDrifters();
+    if (!waiting) this.touches();
+    this.spawns();
 
     if (this.player.flames <= 0) this.finish("lost", "no_flames");
+    else if (this.lanterns.every((l) => l.lit)) this.finish("won", "all_lit");
     else if (this.timeLeft <= EPS) this.finish("lost", "dawn");
     return true;
   }
 
   private finish(result: "won" | "lost", reason: "all_lit" | "dawn" | "no_flames"): void {
-    this.state = result;
+    this.status = result;
     if (result === "won") {
       this.score += T.score.per_second_left * Math.floor(this.timeLeft + EPS);
       this.score += T.score.per_flame_left * this.player.flames;
@@ -187,172 +310,497 @@ export class Sim {
     this.emit("game_over", { result, reason });
   }
 
-  private movePlayer(jumpEdge: boolean): void {
-    const p = this.player;
-    let [x, z] = this.input.move;
-    const len = Math.hypot(x, z);
+  // ---- 2. counters ---------------------------------------------------------------------------------
+  private countdown(): void {
+    const P = this.player;
+    if (P.invuln > 0) P.invuln--;
+    if (P.dashCd > 0) P.dashCd--;
+    if (P.pulseCd > 0) P.pulseCd--;
+    if (P.charm > 0) P.charm--;
+    if (P.fallWait > 0 && --P.fallWait === 0 && P.flames > 0) this.respawn();
+    for (const s of this.shades) {
+      if (s.stunTicks > 0) s.stunTicks--;
+      if (s.recoilTicks > 0) s.recoilTicks--;
+      if (s.spawnTicks > 0) s.spawnTicks--;
+    }
+    for (const m of this.motes) if (m.ttl !== null) m.ttl--;
+    this.motes = this.motes.filter((m) => m.ttl === null || m.ttl > 0);
+    for (const c of this.charms) {
+      if (!c.available && c.respawn > 0 && --c.respawn === 0) c.available = true;
+    }
+  }
+
+  private respawn(): void {
+    const P = this.player;
+    P.pos = [...this.def.start];
+    P.vel = [0, 0, 0];
+    P.grounded = true;
+    P.launched = false;
+    P.dashTicks = 0;
+    P.invuln = C.respawn_invuln_ticks;
+  }
+
+  private updateWind(): void {
+    if (!this.windEnabled) return;
+    const t = this.simTick;
+    const phase = t % C.wind_every_ticks;
+    if (phase === C.wind_every_ticks - C.wind_warn_ticks) {
+      // the direction of the next gust is chosen when the warning starts
+      const a = Math.round(this.rngWind.next() * 360000) / 1000;
+      this.windDirDeg = a;
+      this.windDir = [Math.cos((a * Math.PI) / 180), Math.sin((a * Math.PI) / 180)];
+    }
+    this.windActive = t >= C.wind_every_ticks && phase < C.wind_ticks;
+  }
+
+  // ---- 3. move Mây ---------------------------------------------------------------------------------
+  private blocked(x: number, z: number, y: number): boolean {
+    const t = topAt(this.def, x, z);
+    return t !== null && t > y + C.step_height;
+  }
+
+  private movePlayer(jumpEdge: boolean, dashEdge: boolean): void {
+    const P = this.player;
+    const inp = this.input;
+    let [mx, mz] = inp.move;
+    const len = Math.hypot(mx, mz);
     if (len > 1) {
-      x /= len;
-      z /= len;
+      mx /= len;
+      mz /= len;
     }
-    const th = (this.input.camYawDeg * Math.PI) / 180;
-    const wx = x * Math.cos(th) + z * Math.sin(th);
-    const wz = -x * Math.sin(th) + z * Math.cos(th);
-    p.pos[0] += wx * T.player_speed * DT;
-    p.pos[2] += wz * T.player_speed * DT;
-    // island edge is a wall (fall_enabled is false)
-    const d = Math.hypot(p.pos[0], p.pos[2]);
-    if (d > C.island_radius) {
-      p.pos[0] *= C.island_radius / d;
-      p.pos[2] *= C.island_radius / d;
+    const th = (inp.camYawDeg * Math.PI) / 180;
+    const wx = mx * Math.cos(th) + mz * Math.sin(th);
+    const wz = -mx * Math.sin(th) + mz * Math.cos(th);
+    const moving = Math.hypot(wx, wz) > EPS;
+    if (moving) P.facing = unit2(wx, wz);
+    const speed = T.player_speed * (P.charm > 0 ? C.charm_speed_mult : 1);
+
+    // dash: a false->true press when the cooldown is over; the charm removes the cooldown (a new press is still needed)
+    if (dashEdge && P.dashTicks === 0 && P.dashCd <= 0) {
+      P.dashTicks = C.dash_ticks;
+      P.dashDir = moving ? unit2(wx, wz) : [...P.facing];
+      P.dashCd = P.charm > 0 ? 0 : C.dash_cooldown_ticks;
+      this.emit("dash", {});
     }
-    if (jumpEdge && p.pos[1] <= 0) p.vy = C.jump_speed;
-    if (p.pos[1] > 0 || p.vy > 0) {
-      p.vy -= C.gravity * DT;
-      p.pos[1] += p.vy * DT;
-      if (p.pos[1] <= 0) {
-        p.pos[1] = 0;
-        p.vy = 0;
+
+    // bounce pads: feet on the pad
+    if (!P.launched && P.dashTicks === 0 && P.vel[1] <= 0) {
+      for (const pad of this.def.pads) {
+        if (dist2d(P.pos, pad.pos) <= pad.radius + EPS && P.pos[1] - pad.pos[1] <= 0.2) {
+          P.vel[1] = pad.vy;
+          P.launchVel = [pad.dir[0] * pad.speed, pad.dir[1] * pad.speed];
+          P.launched = true;
+          P.grounded = false;
+          break;
+        }
+      }
+    }
+
+    // horizontal velocity
+    let vx = P.vel[0];
+    let vz = P.vel[2];
+    const dashing = P.dashTicks > 0;
+    let afterDash: [number, number] | null = null;
+    if (dashing) {
+      vx = P.dashDir[0] * T.dash_speed;
+      vz = P.dashDir[1] * T.dash_speed;
+      P.dashTicks--;
+      if (P.dashTicks === 0) afterDash = P.launched ? [P.launchVel[0], P.launchVel[1]] : [wx * speed, wz * speed];
+    } else if (P.launched) {
+      [vx, vz] = P.launchVel;
+    } else {
+      const tx = wx * speed;
+      const tz = wz * speed;
+      const maxStep = (T.player_speed / C.accel_s) * DT; // full speed (or standstill) in 0.1 s
+      const dx = tx - vx;
+      const dz = tz - vz;
+      const d = Math.hypot(dx, dz);
+      if (d <= maxStep) [vx, vz] = [tx, tz];
+      else {
+        vx += (dx / d) * maxStep;
+        vz += (dz / d) * maxStep;
+      }
+    }
+
+    const windX = this.windActive ? this.windDir[0] * C.wind_push : 0;
+    const windZ = this.windActive ? this.windDir[1] * C.wind_push : 0;
+    const y = P.pos[1];
+    let nx = P.pos[0] + (vx + windX) * DT;
+    let nz = P.pos[2] + (vz + windZ) * DT;
+    if (this.blocked(nx, nz, y)) {
+      // a wall: slide along it if one axis is free
+      if (!this.blocked(nx, P.pos[2], y)) {
+        nz = P.pos[2];
+        vz = 0;
+      } else if (!this.blocked(P.pos[0], nz, y)) {
+        nx = P.pos[0];
+        vx = 0;
+      } else {
+        nx = P.pos[0];
+        nz = P.pos[2];
+        vx = 0;
+        vz = 0;
+      }
+    }
+    P.pos[0] = nx;
+    P.pos[2] = nz;
+    if (afterDash) [vx, vz] = afterDash;
+    P.vel[0] = vx;
+    P.vel[2] = vz;
+
+    // vertical
+    const sup = this.groundAt(nx, nz, y);
+    if (jumpEdge && P.grounded && !dashing) {
+      P.vel[1] = C.jump_speed;
+      P.grounded = false;
+    }
+    if (P.grounded && P.vel[1] <= 0 && sup !== null && y - sup <= C.step_height + 1e-9) {
+      P.pos[1] = sup;
+      P.vel[1] = 0;
+    } else if (dashing && !P.grounded) {
+      P.vel[1] = 0; // a dash in the air keeps its height
+    } else {
+      P.vel[1] -= C.gravity * DT;
+      P.pos[1] = y + P.vel[1] * DT;
+      if (P.vel[1] <= 0 && sup !== null && P.pos[1] <= sup) {
+        P.pos[1] = sup;
+        P.vel[1] = 0;
+        P.grounded = true;
+        P.launched = false;
+      } else P.grounded = false;
+    }
+
+    // fell off the island
+    if (P.pos[1] < C.fall_y && T.fall_enabled) {
+      P.flames -= 1;
+      const lost = P.carried;
+      P.carried = 0;
+      P.vel = [0, 0, 0];
+      P.launched = false;
+      P.dashTicks = 0;
+      P.fallWait = C.fall_wait_ticks;
+      this.emit("player_hit", { by: "fall", flames: P.flames, dropped: 0, lost });
+    }
+  }
+
+  // ---- 4. pickups -----------------------------------------------------------------------------------
+  private reachable(pos: Vec3): boolean {
+    const P = this.player;
+    return dist2d(pos, P.pos) <= T.pickup_radius + EPS && Math.abs(P.pos[1] - pos[1]) <= C.pickup_height + EPS;
+  }
+
+  private pickups(): void {
+    const P = this.player;
+    const keep: Mote[] = [];
+    for (const m of this.motes) {
+      if (P.carried < T.carry_capacity && this.reachable(m.pos)) {
+        P.carried += 1;
+        this.emit("mote_picked", { carried: P.carried });
+      } else keep.push(m);
+    }
+    this.motes = keep;
+    for (const c of this.charms) {
+      if (c.available && this.reachable(c.pos)) {
+        c.available = false;
+        c.respawn = C.charm_respawn_ticks;
+        P.charm = C.charm_ticks;
+        this.emit("charm_picked", { charm_id: c.id, charm_ticks: C.charm_ticks });
       }
     }
   }
 
+  // ---- 5. lantern -----------------------------------------------------------------------------------
   private interact(): void {
-    const p = this.player;
-    if (p.carried <= 0) return;
+    const P = this.player;
+    if (P.carried <= 0) return;
     let best: Lantern | undefined;
     let bestD = Infinity;
     for (const l of this.lanterns) {
       if (l.lit) continue;
-      const d = dist2d(l.pos, p.pos);
+      const d = dist2d(l.pos, P.pos);
       if (d <= T.interact_radius + EPS && d < bestD) {
         best = l;
         bestD = d;
       }
     }
     if (!best) return;
-    const amount = Math.min(p.carried, T.lantern_cost - best.deposited);
+    const amount = Math.min(P.carried, T.lantern_cost - best.deposited);
     if (amount <= 0) return;
-    p.carried -= amount;
+    P.carried -= amount;
     best.deposited += amount;
+    this.score += T.score.per_mote * amount;
     this.emit("deposit", { lantern_id: best.id, amount, deposited: best.deposited });
     if (best.deposited >= T.lantern_cost) {
       best.lit = true;
       this.score += T.score.per_lantern;
+      this.litNow.push(best);
       this.emit("lantern_lit", { lantern_id: best.id });
     }
   }
 
-  private updateShades(): void {
-    if (this.randomShades) {
-      if (this.spawnTimer > 0) this.spawnTimer--;
-      if (this.spawnTimer <= 0 && this.shades.length < C.shade_max) {
-        const a = this.rngShades.next() * Math.PI * 2;
-        const id = this.freshShadeId();
-        this.shades.push({
-          id,
-          pos: [r3(C.shade_spawn_radius * Math.sin(a)), C.shade_y, r3(C.shade_spawn_radius * Math.cos(a))],
-          stunTicks: 0,
-        });
-        this.emit("shade_spawned", { id });
-        this.spawnTimer = Math.round(C.shade_spawn_interval_s * C.tick_rate);
-      }
-    }
-    const pp = this.player.pos;
-    for (const s of this.shades) {
-      if (s.stunTicks > 0) {
-        s.stunTicks--;
-        continue;
-      }
-      const dx = pp[0] - s.pos[0];
-      const dz = pp[2] - s.pos[2];
-      const d = Math.hypot(dx, dz);
-      if (d > EPS) {
-        const m = Math.min(T.shade_speed * DT, d);
-        s.pos[0] += (dx / d) * m;
-        s.pos[2] += (dz / d) * m;
-      }
-      this.keepOutOfLanterns(s);
+  // ---- 6. safe zones --------------------------------------------------------------------------------
+  private safeZones(): void {
+    for (const l of this.litNow) {
+      for (const s of this.shades) if (dist2d(s.pos, l.pos) < T.safe_radius) s.pushOut = C.safe_push_ticks;
     }
   }
-
-  /** Shades cannot enter safe_radius around any lantern: push them back to the rim. */
-  private keepOutOfLanterns(s: Shade): void {
-    for (const l of this.lanterns) {
+  private litLanterns(): Lantern[] {
+    return this.lanterns.filter((l) => l.lit);
+  }
+  private keepOutOfLit(s: Shade): void {
+    for (const l of this.litLanterns()) {
       const dx = s.pos[0] - l.pos[0];
       const dz = s.pos[2] - l.pos[2];
-      const d = Math.hypot(dx, dz);
-      if (d < T.safe_radius) {
-        const nx = d > EPS ? dx / d : 1;
-        const nz = d > EPS ? dz / d : 0;
+      if (Math.hypot(dx, dz) < T.safe_radius) {
+        const [nx, nz] = unit2(dx, dz);
         s.pos[0] = l.pos[0] + nx * T.safe_radius;
         s.pos[2] = l.pos[2] + nz * T.safe_radius;
       }
     }
   }
 
+  // ---- 7. pulse -------------------------------------------------------------------------------------
   private pulse(): void {
-    const p = this.player;
-    if (this.cooldown > 0 || p.carried < T.pulse_cost) return;
-    p.carried -= T.pulse_cost;
-    this.cooldown = cooldownTicks;
+    const P = this.player;
+    if (P.pulseCd > 0 || P.carried < T.pulse_cost) return;
+    P.carried -= T.pulse_cost;
+    P.pulseCd = Math.round(T.pulse_cooldown_s * C.tick_rate);
+    const center: Vec3 = [P.pos[0], P.pos[1] + C.pulse_center_up, P.pos[2]];
     const ids: string[] = [];
     for (const s of this.shades) {
-      const dx = s.pos[0] - p.pos[0];
-      const dz = s.pos[2] - p.pos[2];
-      const d = Math.hypot(dx, dz);
-      if (d > T.pulse_radius + EPS) continue;
-      const nx = d > EPS ? dx / d : 1;
-      const nz = d > EPS ? dz / d : 0;
-      s.pos[0] += nx * T.pulse_push_m;
-      s.pos[2] += nz * T.pulse_push_m;
-      this.keepOutOfLanterns(s);
-      s.stunTicks = stunTicks;
+      if (dist3d(center, s.pos) > T.pulse_radius + EPS) continue; // the target is fixed now, at the trigger tick
+      s.stunTicks = C.pulse_stun_ticks;
+      s.recoilTicks = 0;
+      s.push = { dir: unit2(s.pos[0] - center[0], s.pos[2] - center[2]), ticksLeft: C.pulse_push_ticks };
       ids.push(s.id);
       this.score += T.score.per_stun;
+    }
+    for (const d of this.drifters) {
+      if (dist3d(center, d.pos) > T.pulse_radius + EPS) continue;
+      if (d.state === "chase") {
+        d.state = "flee";
+        d.fleeTicks = C.drifter_flee_ticks;
+        d.fleeDir = unit2(d.pos[0] - P.pos[0], d.pos[2] - P.pos[2]);
+      } else if (d.state === "flee" && d.stolen > 0) {
+        this.dropMotesAt(d.pos, d.stolen);
+        this.emit("drifter_drop", { drifter_id: d.id, amount: d.stolen });
+        d.stolen = 0;
+        d.fleeTicks = Math.min(d.fleeTicks, C.drifter_flee_after_pulse_ticks);
+      }
     }
     this.emit("pulse", { stunned_ids: ids });
   }
 
-  private pickup(): void {
-    const p = this.player;
-    const keep: Mote[] = [];
-    for (const m of this.motes) {
-      if (p.carried < T.carry_capacity && dist2d(m.pos, p.pos) <= T.pickup_radius + EPS) {
-        p.carried += 1;
-        this.score += T.score.per_mote;
-        this.emit("mote_picked", { carried: p.carried });
-      } else {
-        keep.push(m);
-      }
+  private dropMotesAt(pos: Vec3, n: number): void {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const x = pos[0] + Math.cos(a) * 0.5;
+      const z = pos[2] + Math.sin(a) * 0.5;
+      const y = this.groundAt(x, z, this.player.pos[1], 4) ?? this.player.pos[1];
+      this.motes.push({ id: `M${this.nextMote++}`, pos: [r3(x), y, r3(z)], kind: "dropped", ttl: C.mote_ttl_ticks });
     }
-    this.motes = keep;
   }
 
-  private hitCheck(): void {
-    if (this.invuln > 0) {
-      this.invuln--;
-      return;
-    }
-    const p = this.player;
-    const hitter = this.shades.find((s) => s.stunTicks <= 0 && dist2d(s.pos, p.pos) <= T.shade_hit_radius + EPS);
-    if (!hitter) return;
-    p.flames -= 1;
-    const dropped = Math.floor(p.carried * T.hit_drop_ratio);
-    p.carried -= dropped;
-    for (let i = 0; i < dropped; i++) {
-      const a = (i / dropped) * Math.PI * 2;
-      const r = T.pickup_radius + C.drop_ring_extra;
-      let x = p.pos[0] + r * Math.sin(a);
-      let z = p.pos[2] + r * Math.cos(a);
-      const d = Math.hypot(x, z);
-      if (d > C.island_radius) {
-        x *= C.island_radius / d;
-        z *= C.island_radius / d;
+  // ---- 8. shades and drifters -----------------------------------------------------------------------
+  /** Move a shade by (dx, dz) unless the way is a wall, a missing floor or the end of the map. Returns true if it moved. */
+  private shadeStep(s: Shade, dx: number, dz: number): boolean {
+    const nx = s.pos[0] + dx;
+    const nz = s.pos[2] + dz;
+    const feet = s.pos[1] - C.shade_y;
+    const reach = C.step_height + 1.5;
+    const sup = this.groundAt(nx, nz, feet, reach);
+    if (sup === null || this.blocked(nx, nz, feet)) return false;
+    const oldSup = this.groundAt(s.pos[0], s.pos[2], feet, reach) ?? sup;
+    s.pos[0] = nx;
+    s.pos[2] = nz;
+    s.pos[1] += sup - oldSup;
+    return true;
+  }
+
+  private moveShades(): void {
+    const P = this.player;
+    const speed = this.def.shadeSpeed * DT;
+    for (const s of this.shades) {
+      if (s.spawnTicks > 0) continue;
+      if (s.pushOut > 0) {
+        // thrown out of a freshly lit lantern's safe zone within 30 ticks; harmless meanwhile
+        const left = s.pushOut--;
+        const near = this.litLanterns().filter((l) => dist2d(s.pos, l.pos) < T.safe_radius).sort((a, b) => dist2d(s.pos, a.pos) - dist2d(s.pos, b.pos))[0];
+        if (near) {
+          const d = dist2d(s.pos, near.pos);
+          const [nx, nz] = unit2(s.pos[0] - near.pos[0], s.pos[2] - near.pos[2]);
+          const step = (T.safe_radius - d) / Math.max(1, left);
+          this.shadeStep(s, nx * step, nz * step);
+        } else s.pushOut = 0;
+        continue;
       }
-      this.motes.push({ id: `M${this.nextMote++}`, pos: [r3(x), 0, r3(z)] });
+      if (s.stunTicks > 0) {
+        if (s.push && s.push.ticksLeft > 0) {
+          const k = T.pulse_push_m / C.pulse_push_ticks;
+          if (this.shadeStep(s, s.push.dir[0] * k, s.push.dir[1] * k)) s.push.ticksLeft--;
+          else s.push.ticksLeft = 0; // stops at an obstacle
+        }
+        this.keepOutOfLit(s);
+        continue;
+      }
+      s.push = null;
+      if (s.recoilTicks > 0) {
+        const dir = s.recoilDir ?? [1, 0];
+        const k = C.recoil_m / (C.recoil_ticks - 1); // the hit tick itself does not move: 59 recoil steps make 2 m
+        this.shadeStep(s, dir[0] * k, dir[1] * k);
+        this.keepOutOfLit(s);
+        continue;
+      }
+      const dPlayer = P.fallWait > 0 ? Infinity : dist2d(s.pos, P.pos);
+      if (s.mode === "wander" && dPlayer <= C.detect_m) s.mode = "chase";
+      else if (s.mode === "chase" && dPlayer > C.lose_m) s.mode = "wander";
+
+      let target: Vec3 | null = null;
+      if (s.mode === "chase") target = P.pos;
+      else {
+        let bd = Infinity;
+        for (const l of this.lanterns) {
+          if (l.lit) continue;
+          const d = dist2d(s.pos, l.pos);
+          if (d < bd) {
+            bd = d;
+            target = l.pos;
+          }
+        }
+      }
+      if (target) {
+        const d = dist2d(s.pos, target);
+        if (d > EPS && (s.mode === "chase" || d > 0.5)) {
+          const [nx, nz] = unit2(target[0] - s.pos[0], target[2] - s.pos[2]);
+          const m = Math.min(speed, d);
+          this.shadeStep(s, nx * m, nz * m);
+        }
+      }
+      this.keepOutOfLit(s);
     }
-    this.invuln = invulnTicks;
-    this.emit("player_hit", { by: "shade", flames: p.flames, dropped });
+  }
+
+  private moveDrifters(): void {
+    const P = this.player;
+    const fast = C.drifter_fast_speed * DT;
+    const wantsPlayer = () => P.carried >= C.drifter_trigger_carry;
+    for (const d of this.drifters) {
+      const near = dist2d(d.pos, P.pos) <= C.drifter_trigger_m;
+      if (d.state === "idle") {
+        if (d.driftTicks-- <= 0) {
+          const a = this.rngDrift.next() * Math.PI * 2;
+          d.dir = [Math.cos(a), Math.sin(a)];
+          d.driftTicks = 120;
+        }
+        d.pos[0] += d.dir[0] * C.drifter_idle_speed * DT;
+        d.pos[2] += d.dir[1] * C.drifter_idle_speed * DT;
+        if (wantsPlayer() && near) d.state = "chase";
+      } else if (d.state === "chase") {
+        if (!(wantsPlayer() && near)) d.state = "idle";
+        else {
+          const dd = dist2d(d.pos, P.pos);
+          const [nx, nz] = unit2(P.pos[0] - d.pos[0], P.pos[2] - d.pos[2]);
+          const m = Math.min(fast, dd);
+          d.pos[0] += nx * m;
+          d.pos[2] += nz * m;
+        }
+      } else {
+        const dir = d.fleeDir ?? unit2(d.pos[0] - P.pos[0], d.pos[2] - P.pos[2]);
+        d.fleeDir = dir;
+        d.pos[0] += dir[0] * fast;
+        d.pos[2] += dir[1] * fast;
+        d.fleeTicks--;
+      }
+    }
+    this.drifters = this.drifters.filter((d) => d.state !== "flee" || d.fleeTicks > 0);
+  }
+
+  // ---- 9. touches -----------------------------------------------------------------------------------
+  private touches(): void {
+    const P = this.player;
+    for (const d of this.drifters) {
+      // the drifter steals first (invulnerability does not protect against it)
+      if (d.state !== "chase" || this.usedDrifters.has(d.id)) continue;
+      if (dist2d(d.pos, P.pos) > C.drifter_touch_m + EPS) continue;
+      this.usedDrifters.add(d.id);
+      const amount = Math.min(C.drifter_steal_max, P.carried);
+      P.carried -= amount;
+      d.stolen = amount;
+      d.state = "flee";
+      d.fleeTicks = C.drifter_flee_ticks;
+      d.fleeDir = unit2(d.pos[0] - P.pos[0], d.pos[2] - P.pos[2]);
+      this.emit("drifter_steal", { drifter_id: d.id, amount, carried: P.carried });
+    }
+    if (P.invuln > 0) return;
+    const hitter = [...this.shades]
+      .sort((a, b) => idNum(a.id) - idNum(b.id))
+      .find((s) => {
+        const st = this.shadeState(s);
+        return (
+          st !== "stunned" && st !== "spawning" && st !== "recoil" && s.pushOut <= 0 &&
+          dist2d(s.pos, P.pos) <= T.shade_hit_radius + EPS && Math.abs(P.pos[1] - s.pos[1]) <= C.hit_height + EPS
+        );
+      });
+    if (!hitter) return;
+    P.flames -= 1;
+    const dropped = Math.floor(P.carried * T.hit_drop_ratio);
+    P.carried -= dropped;
+    for (let i = 0; i < dropped; i++) {
+      const a = this.rngDrop.next() * Math.PI * 2;
+      const r = C.drop_ring_min + this.rngDrop.next() * (C.drop_ring_max - C.drop_ring_min);
+      let x = P.pos[0] + r * Math.cos(a);
+      let z = P.pos[2] + r * Math.sin(a);
+      let y = this.groundAt(x, z, P.pos[1], C.step_height);
+      if (y === null || this.blocked(x, z, P.pos[1])) {
+        x = P.pos[0];
+        z = P.pos[2];
+        y = P.pos[1];
+      }
+      this.motes.push({ id: `M${this.nextMote++}`, pos: [r3(x), y, r3(z)], kind: "dropped", ttl: C.mote_ttl_ticks });
+    }
+    P.invuln = Math.round(T.invuln_s * C.tick_rate);
+    hitter.recoilTicks = C.recoil_ticks;
+    hitter.recoilDir = unit2(hitter.pos[0] - P.pos[0], hitter.pos[2] - P.pos[2]);
+    this.emit("player_hit", { by: "shade", flames: P.flames, dropped, lost: 0 });
+  }
+
+  // ---- 10. spawns -----------------------------------------------------------------------------------
+  private spawns(): void {
+    const t = this.simTick;
+    if (this.randomMotes && t % C.mote_spawn_every_ticks === 0 && this.motes.length < C.mote_cap) {
+      const free = this.def.motePoints.filter((p) => !this.motes.some((m) => dist2d(m.pos, p) < 0.5));
+      if (free.length) {
+        const pt = free[Math.floor(this.rngMotes.next() * free.length)] as Vec3;
+        this.motes.push({ id: `M${this.nextMote++}`, pos: [...pt], kind: "random", ttl: null });
+      }
+    }
+    if (this.randomShades) {
+      const first = t === C.first_shade_tick;
+      const later = t > C.first_shade_tick && (t - C.first_shade_tick) % this.def.shadeEveryTicks === 0;
+      const n = first ? 2 : later ? 1 : 0;
+      for (let i = 0; i < n; i++) this.spawnShade();
+    }
+    if (this.randomDrifters && this.def.driftersEnabled && t >= C.drifter_first_tick && t % C.drifter_every_ticks === 0 && this.drifters.length < C.drifter_max) {
+      const pt = this.def.mist[Math.floor(this.rngDrift.next() * this.def.mist.length)] as [number, number];
+      this.drifters.push(this.newDrifter(this.freshDrifterId(), [pt[0], C.drifter_y, pt[1]]));
+    }
+  }
+
+  private spawnShade(): void {
+    if (this.shades.length >= this.def.shadeMax) return;
+    const P = this.player;
+    const lit = this.litLanterns();
+    const valid = this.def.shadeSpawns.filter(
+      (p) =>
+        Math.hypot(p[0] - P.pos[0], p[1] - P.pos[2]) >= 15 &&
+        !this.shades.some((s) => Math.hypot(s.pos[0] - p[0], s.pos[2] - p[1]) < 0.5) &&
+        !lit.some((l) => Math.hypot(l.pos[0] - p[0], l.pos[2] - p[1]) < T.safe_radius),
+    );
+    if (!valid.length) return; // no valid point: skip this spawn
+    const p = valid[Math.floor(this.rngShades.next() * valid.length)] as [number, number];
+    const sup = this.groundAt(p[0], p[1], 0, 0.5) ?? 0;
+    const id = this.freshShadeId();
+    this.shades.push(this.newShade(id, [p[0], sup + C.shade_y, p[1]]));
+    this.emit("shade_spawned", { id });
   }
 }
