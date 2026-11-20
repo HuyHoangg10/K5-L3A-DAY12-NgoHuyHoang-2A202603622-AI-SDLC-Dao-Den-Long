@@ -53,8 +53,13 @@ export class Hud {
   startButton(onClick: () => void): void {
     $("start-btn").addEventListener("click", onClick);
     $("end-btn").addEventListener("click", () => this.onAgain());
+    $("change-btn").addEventListener("click", () => this.onChange());
   }
   onAgain: () => void = () => {};
+  onChange: () => void = () => {};
+  showStart(): void {
+    $("start").classList.add("show");
+  }
 
   showEnd(sim: Sim, reason: string): void {
     const won = sim.state === "won";

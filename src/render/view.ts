@@ -34,6 +34,10 @@ export class View {
   private mayBody = new THREE.Group();
   private mayLight = new THREE.PointLight(WARM, 28, 22, 2);
   private mayLamp!: THREE.Mesh;
+  private dress!: THREE.Mesh;
+  private hatMesh!: THREE.Mesh;
+  private ray = new THREE.Raycaster();
+  private ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private ambient = new THREE.HemisphereLight(0x8a94d8, 0x3a3050, 0.95);
   private clouds: THREE.Mesh[] = [];
   private heading = 0;
@@ -163,6 +167,8 @@ export class View {
     const hatEdge = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.02, 6, 28), std(0xb89752));
     hatEdge.rotation.x = Math.PI / 2;
     hatEdge.position.y = 1.4;
+    this.dress = dress;
+    this.hatMesh = hat;
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 6), std(0x7a5a38));
     pole.position.set(0.5, 1.05, 0.1);
     this.mayLamp = new THREE.Mesh(
@@ -174,6 +180,22 @@ export class View {
     this.mayBody.add(dress, head, hat, hatEdge, pole, this.mayLamp, this.mayLight);
     this.may.add(this.mayBody);
     this.scene.add(this.may);
+  }
+
+  /** Champion look: dress and hat colour, size (the big form of the cub is 1.55). */
+  setStyle(st: { dress: number; hat: number; scale: number }): void {
+    (this.dress.material as THREE.MeshStandardMaterial).color.setHex(st.dress);
+    (this.hatMesh.material as THREE.MeshStandardMaterial).color.setHex(st.hat);
+    this.may.scale.setScalar(st.scale);
+  }
+
+  /** World (x, z) on the ground under a screen point, or null if the ray misses the ground. */
+  groundAt(clientX: number, clientY: number): [number, number] | null {
+    const r = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    this.ray.setFromCamera(ndc, this.camera);
+    const hit = this.ray.ray.intersectPlane(this.ground, new THREE.Vector3());
+    return hit ? [hit.x, hit.z] : null;
   }
 
   // ---- dynamic objects ----------------------------------------------------------------------

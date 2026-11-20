@@ -1,39 +1,50 @@
-import { CardKit, type KitEvent } from "../extras/cards";
-import { CardsHud, CardsView } from "../extras/cards-view";
+import { championById } from "../extras/champions";
+import type { KitBase, KitEvent } from "../extras/kit";
+import { KitHud, KitView } from "../extras/kit-view";
+import { ChampionSelect } from "../extras/select";
 import { Sim } from "../sim/sim";
 import { DT, TUNING as T } from "../sim/tuning";
 import type { SimEvent } from "../sim/types";
 import { Hud } from "./hud";
 import { InputState } from "./input";
+import { steer } from "./steer";
 import { View } from "./view";
 
 /**
- * Live game loop: fixed 1/60 s sim steps fed by the keyboard, drawn with Three.js. Rules all live in src/sim.
- * The card skills (src/extras) are layered on top here and only here, so headless runs never see them.
+ * Live game loop: fixed 1/60 s sim steps fed by the mouse and keyboard, drawn with Three.js. Rules all live in src/sim.
+ * Champion skills (src/extras) are layered on top here and only here, so headless runs never see them.
  */
 export class Game {
   private sim!: Sim;
-  private kit!: CardKit;
+  private kit!: KitBase;
   private view: View;
-  private cardsView: CardsView;
-  private cardsHud = new CardsHud();
+  private kitView: KitView;
+  private kitHud = new KitHud();
+  private select: ChampionSelect;
   private input: InputState;
   private hud = new Hud();
   private acc = 0;
   private last = 0;
   private time = 0;
-  private running = false; // false on the start screen
+  private running = false; // false while the champion select / start screen is up
   private runs = 0;
+  private moveTarget: [number, number] | null = null;
+  private aim: [number, number] | null = null;
 
   constructor(host: HTMLElement) {
     this.view = new View(host);
-    this.cardsView = new CardsView(this.view.scene);
+    this.kitView = new KitView(this.view.scene);
     this.input = new InputState(this.view.renderer.domElement);
+    this.select = new ChampionSelect(document.getElementById("champs") as HTMLElement);
     this.input.onStart = () => this.begin();
     this.input.onRestart = () => this.restart();
+    this.input.onDigit = (n) => {
+      if (!this.running) this.select.pickIndex(n);
+    };
     this.hud.startButton(() => this.begin());
     this.hud.onAgain = () => this.restart();
-    this.cardsHud.setVisible(false);
+    this.hud.onChange = () => this.changeChampion();
+    this.kitHud.setVisible(false);
     this.newRun();
     requestAnimationFrame((t) => this.frame(t));
   }
@@ -42,24 +53,33 @@ export class Game {
     // the seed is the only non-deterministic thing, and it lives here in the render layer
     const seed = (Date.now() + this.runs++ * 7919) % 2147483647;
     this.sim = new Sim({ seed });
-    this.kit = new CardKit(this.sim);
+    this.kit = championById(this.select.selected).create(this.sim);
     this.view.reset();
-    this.cardsView.reset();
+    this.kitView.reset();
+    this.moveTarget = null;
     this.acc = 0;
     this.hud.hideEnd();
   }
 
   private begin(): void {
     if (this.running) return;
+    this.newRun(); // fresh run with the champion that is selected now
     this.running = true;
     this.hud.hideStart();
-    this.cardsHud.setVisible(true);
-    this.hud.toast("Find fireflies, then press F at a lantern", 3500);
+    this.kitHud.setVisible(true);
+    this.hud.toast("Right-click to walk. Pick up fireflies, then press F at a lantern", 4000);
   }
 
   private restart(): void {
     if (!this.running || this.sim.state === "playing") return; // Enter only restarts after the night is over
     this.newRun();
+  }
+
+  private changeChampion(): void {
+    this.running = false;
+    this.hud.hideEnd();
+    this.hud.showStart();
+    this.kitHud.setVisible(false);
   }
 
   private handle(e: SimEvent): void {
@@ -94,34 +114,18 @@ export class Game {
   }
 
   private handleKit(e: KitEvent): void {
-    switch (e.name) {
-      case "no_light":
-        this.hud.toast("Card Fan needs a firefly", 1200);
-        break;
-      case "on_cooldown":
-        this.hud.toast(`${e.key.toUpperCase()} is recharging`, 900);
-        break;
-      case "roll_start":
-        this.hud.toast("Press W again to pick the card", 1500);
-        break;
-      case "card_locked":
-        this.hud.toast(`${e.card === "red" ? "Pink" : e.card[0]!.toUpperCase() + e.card.slice(1)} card ready: next Card Fan uses it`, 2000);
-        break;
-      case "card_hit":
-        this.view.burst(this.sim.player.pos[0], this.sim.player.pos[2], 0xffe08a, 2, 0.3);
-        break;
-      case "deck_on":
-        this.hud.toast("Lucky Deck: fireflies count double for 6 s", 1800);
-        break;
-      case "gate_start":
-        this.hud.toast(`Lantern Gate opening toward ${e.lantern}... stay safe`, 1600);
-        break;
-      case "gate_done":
-        this.view.burst(this.sim.player.pos[0], this.sim.player.pos[2], 0xfff0b0, 6, 0.6);
-        break;
-      case "gate_cancel":
-        this.hud.toast("The gate fizzled out", 1200);
-        break;
+    if (e.msg) this.hud.toast(e.msg, 1600);
+  }
+
+  /** Right mouse: walk to the point under the mouse (hold to keep following). Arrow keys cancel it. */
+  private updateTarget(): void {
+    const click = this.input.takeRightClick();
+    const ptr = this.input.pointer;
+    this.aim = ptr ? this.view.groundAt(ptr.x, ptr.y) : null;
+    if (this.input.arrowsHeld) this.moveTarget = null;
+    if ((click || this.input.rightHeld) && this.aim) {
+      this.moveTarget = [this.aim[0], this.aim[1]];
+      if (click) this.view.burst(this.aim[0], this.aim[1], 0xffd27a, 1.1, 0.4);
     }
   }
 
@@ -129,23 +133,31 @@ export class Game {
     const dt = Math.min(0.1, (now - (this.last || now)) / 1000);
     this.last = now;
     this.time += dt;
+    this.updateTarget();
     if (this.running && this.sim.state === "playing") {
       this.acc += dt;
       let steps = 0;
       while (this.acc >= DT && steps < 6) {
-        this.sim.setInput(this.input.sample());
+        const inp = this.input.sample();
+        if (this.moveTarget && inp.move[0] === 0 && inp.move[1] === 0) {
+          const s = steer([this.sim.player.pos[0], this.sim.player.pos[2]], this.moveTarget, inp.camYawDeg, T.player_speed, DT);
+          inp.move = s.move;
+          if (s.arrived) this.moveTarget = null;
+        }
+        this.sim.setInput(inp);
         this.sim.step();
         this.input.consumed();
         for (const e of this.sim.events) this.handle(e);
-        for (const e of this.kit.tick({ pressed: this.input.takeSkills(), camYawDeg: this.input.camYawDeg })) this.handleKit(e);
+        for (const e of this.kit.tick({ pressed: this.input.takeSkills(), camYawDeg: this.input.camYawDeg, aim: this.aim })) this.handleKit(e);
         this.acc -= DT;
         steps++;
       }
       if (steps === 6) this.acc = 0; // tab was hidden; do not try to catch up
     }
+    this.view.setStyle(this.kit.style);
     this.view.update(this.sim, dt, this.input.camYawDeg);
-    this.cardsView.update(this.kit, this.sim, this.time);
-    this.cardsHud.update(this.kit);
+    this.kitView.update(this.kit, this.sim, this.time);
+    this.kitHud.update(this.kit);
     this.hud.update(this.sim);
     this.view.render();
     requestAnimationFrame((t) => this.frame(t));
