@@ -1,0 +1,31 @@
+{
+  "random_motes": false,
+  "random_shades": false,
+  "random_drifters": false,
+  "wind_enabled": false,
+  "player": {
+    "pos": [
+      0,
+      0,
+      0
+    ]
+  },
+  "shades": [
+    {
+      "id": "S1",
+      "pos": [
+        11.9,
+        1,
+        0
+      ]
+    },
+    {
+      "id": "S2",
+      "pos": [
+        0,
+        1,
+        -12.1
+      ]
+    }
+  ]
+}

@@ -101,7 +101,7 @@ describe("Card Reader: W Roll the Card (the card acts at once)", () => {
     expect(kit.speedMult).toBe(KIT.w.redBoost);
     const z0 = sim.player.pos[2];
     run(sim, kit, 60);
-    expect(sim.player.pos[2] - z0).toBeCloseTo(6 * KIT.w.redBoost, 1);
+    expect(sim.player.pos[2] - z0).toBeCloseTo(6 * KIT.w.redBoost, 1); // already at full speed here
     run(sim, kit, KIT.w.redTicks);
     expect(kit.speedMult).toBe(1);
   });
@@ -131,11 +131,11 @@ describe("Card Reader: E Lure Lantern (new)", () => {
   });
   it("shades chase the lure instead of Mây while it lasts", () => {
     // lure at (10,0); the shade at (10,12) walks straight down x=10 toward it; without the lure it drifts toward Mây
-    const withLure = mk({ player: { carried: 2 }, shades: [{ id: "S1", pos: [10, 1, 12] }] });
+    const withLure = mk({ player: { carried: 2 }, shades: [{ id: "S1", pos: [10, 1, 12], state: "chase" }] });
     run(withLure.sim, withLure.kit, 61, { 0: ["e"] }, [10, 0]);
     expect(withLure.sim.shades[0]?.pos[0]).toBeCloseTo(10, 1); // the first tick moved it toward Mây before the lure existed
     expect(withLure.sim.shades[0]?.pos[2]).toBeLessThan(12 - 3);
-    const without = mk({ player: { carried: 2 }, shades: [{ id: "S1", pos: [10, 1, 12] }] });
+    const without = mk({ player: { carried: 2 }, shades: [{ id: "S1", pos: [10, 1, 12], state: "chase" }] });
     run(without.sim, without.kit, 61);
     expect(without.sim.shades[0]?.pos[0]).toBeLessThan(9.5);
   });
@@ -241,7 +241,7 @@ describe("every champion stays out of the Test Contract", () => {
     const built = readFileSync(path.join(root, "dist/headless/cli.js"), "utf8");
     for (const word of ["CardKit", "CubKit", "WeaverKit", "KitBase", "Lantern Gate", "Venom Burst"]) expect(built).not.toContain(word);
   });
-  it("there are exactly three champions to pick from", () => {
-    expect(CHAMPIONS.map((c) => c.id)).toEqual(["cards", "cub", "weaver"]);
+  it("there are four characters to pick from, and the default one comes first", () => {
+    expect(CHAMPIONS.map((c) => c.id)).toEqual(["default", "cards", "cub", "weaver"]);
   });
 });

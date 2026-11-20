@@ -1,0 +1,11 @@
+{
+  "random_shades": false,
+  "random_drifters": false,
+  "player": {
+    "pos": [
+      0,
+      0,
+      -39
+    ]
+  }
+}

@@ -5,7 +5,7 @@ import { FormatError, parseInputs, parseScenario } from "../sim/validate";
 import { runHeadless } from "./run";
 
 const USAGE =
-  "usage: cli --seed <int> --night 1 [--scenario <file.json>] [--inputs <file.json>] --ticks <int> --out <file.jsonl> [--snapshot-every <int>]";
+  "usage: cli --seed <int> --night 1|2|3 [--scenario <file.json>] [--inputs <file.json>] --ticks <int> --out <file.jsonl> [--snapshot-every <int>]";
 
 class UsageError extends Error {}
 
@@ -66,14 +66,14 @@ function main(): number {
     const every = intArg(args, "snapshot-every", { def: 10, min: 1 });
     const out = args.get("out");
     if (!out) throw new UsageError("missing --out");
-    if (night !== 1) throw new UsageError("only --night 1 exists");
+    if (night !== 1 && night !== 2 && night !== 3) throw new UsageError("--night must be 1, 2 or 3");
 
     const scenarioPath = args.get("scenario");
     const inputsPath = args.get("inputs");
     const scenario = scenarioPath ? parseScenario(readJson(scenarioPath, "scenario")) : undefined;
     const frames = inputsPath ? parseInputs(readJson(inputsPath, "inputs")) : undefined;
 
-    const lines = runHeadless({ seed, ticks, snapshotEvery: every, scenario, frames });
+    const lines = runHeadless({ seed, night: night as 1 | 2 | 3, ticks, snapshotEvery: every, scenario, frames });
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, lines.join("\n") + "\n");
     return 0;

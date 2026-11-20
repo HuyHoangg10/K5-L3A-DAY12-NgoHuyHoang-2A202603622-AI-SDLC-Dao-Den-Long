@@ -29,7 +29,7 @@ export function run(
 }
 
 export const names = (ev: KitEvent[]) => ev.map((e) => e.name);
-export const moveInput = (move: [number, number]) => ({ move, camYawDeg: 0, jump: false, interact: false, pulse: false });
+export const moveInput = (move: [number, number]) => ({ move, camYawDeg: 0, jump: false, interact: false, pulse: false, dash: false, pause: false });
 /** Freeze a shade in place so tests can aim at a fixed target. */
 export const freeze = (sim: Sim) => sim.shades.forEach((s) => (s.stunTicks = 100000));
 /** Reach a protected member of a kit (test hook only). */

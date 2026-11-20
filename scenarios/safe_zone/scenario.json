@@ -1,0 +1,30 @@
+{
+  "random_motes": false,
+  "random_shades": false,
+  "random_drifters": false,
+  "wind_enabled": false,
+  "player": {
+    "pos": [
+      0,
+      0,
+      22
+    ]
+  },
+  "lanterns": [
+    {
+      "id": "L1",
+      "lit": true
+    }
+  ],
+  "shades": [
+    {
+      "id": "S1",
+      "pos": [
+        15,
+        1,
+        25
+      ],
+      "state": "chase"
+    }
+  ]
+}

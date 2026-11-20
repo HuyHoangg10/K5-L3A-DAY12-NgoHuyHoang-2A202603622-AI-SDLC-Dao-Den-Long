@@ -53,7 +53,7 @@ describe("Rowdy Cub: rage and the big form", () => {
     const { sim, kit } = cub();
     sim.setInput(moveInput([0, 1]));
     run(sim, kit, 60);
-    expect(sim.player.pos[2]).toBeCloseTo(6 * CUB.miniSpeed, 2);
+    expect(sim.player.pos[2]).toBeCloseTo(5.75 * CUB.miniSpeed, 2); // 5.75 m = the distance Mây covers in 60 ticks with her 0.1 s start-up
   });
 });
 
@@ -208,7 +208,7 @@ describe("Serpent Weaver", () => {
     const { sim, kit } = weaver();
     sim.setInput(moveInput([1, 1]));
     run(sim, kit, 60);
-    const each = (6 * WEAVER.speed) / Math.SQRT2;
+    const each = (5.75 * WEAVER.speed) / Math.SQRT2;
     expect(sim.player.pos[0]).toBeCloseTo(each, 3);
     expect(sim.player.pos[2]).toBeCloseTo(each, 3);
   });
@@ -216,7 +216,7 @@ describe("Serpent Weaver", () => {
     const { sim, kit } = weaver();
     sim.setInput(moveInput([0, 1]));
     run(sim, kit, 60);
-    expect(sim.player.pos[2]).toBeCloseTo(6 * WEAVER.speed, 2);
+    expect(sim.player.pos[2]).toBeCloseTo(5.75 * WEAVER.speed, 2);
   });
   it("Q Venom Burst: telegraphed circle at the mouse; after the delay shades inside are poisoned, others are not; hit = speed boost", () => {
     const { sim, kit } = weaver({ player: { carried: 3 }, shades: [{ id: "S1", pos: [0, 1, 8] }, { id: "S2", pos: [0, 1, 14] }] });
@@ -312,7 +312,7 @@ describe("shared base", () => {
     expect(poke(kit).ink.size).toBe(0);
   });
   it("a slow of mult 0.5 halves a chasing shade's step", () => {
-    const { sim, kit } = weaver({ shades: [{ id: "S1", pos: [20, 1, 0] }] });
+    const { sim, kit } = weaver({ shades: [{ id: "S1", pos: [10, 1, 0], state: "chase" }] });
     run(sim, kit, 1);
     poke(kit).slow(sim.shades[0], 0.5, 600);
     const x0 = sim.shades[0]!.pos[0];

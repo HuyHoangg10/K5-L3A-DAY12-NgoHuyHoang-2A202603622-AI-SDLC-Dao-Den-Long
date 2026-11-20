@@ -15,7 +15,7 @@ export function readManifest() {
 export function runEntry(entry, outFile) {
   mkdirSync(path.dirname(outFile), { recursive: true });
   const dir = path.join(root, "scenarios", entry.name);
-  const args = [cliPath, "--seed", String(entry.seed), "--night", "1", "--ticks", String(entry.ticks), "--out", outFile, "--snapshot-every", String(entry.snapshot_every ?? 10)];
+  const args = [cliPath, "--seed", String(entry.seed), "--night", String(entry.night ?? 1), "--ticks", String(entry.ticks), "--out", outFile, "--snapshot-every", String(entry.snapshot_every ?? 10)];
   if (existsSync(path.join(dir, "scenario.json"))) args.push("--scenario", path.join(dir, "scenario.json"));
   if (existsSync(path.join(dir, "inputs.json"))) args.push("--inputs", path.join(dir, "inputs.json"));
   const r = spawnSync(process.execPath, args, { encoding: "utf8" });

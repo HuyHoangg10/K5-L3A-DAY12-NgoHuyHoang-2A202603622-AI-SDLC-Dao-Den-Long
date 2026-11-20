@@ -44,7 +44,7 @@ export function wrap(raw: string[]): Run {
 }
 
 interface Manifest {
-  scenarios: { name: string; seed: number; ticks: number; snapshot_every: number }[];
+  scenarios: { name: string; night: number; seed: number; ticks: number; snapshot_every: number }[];
 }
 
 export function manifestEntry(name: string) {
@@ -63,6 +63,7 @@ export function runNamed(name: string): Run {
   return wrap(
     runHeadless({
       seed: e.seed,
+      night: e.night as 1 | 2 | 3,
       ticks: e.ticks,
       snapshotEvery: e.snapshot_every,
       scenario: existsSync(sp) ? parseScenario(JSON.parse(readFileSync(sp, "utf8"))) : undefined,
@@ -72,6 +73,6 @@ export function runNamed(name: string): Run {
 }
 
 /** Run an inline scenario (for small variations inside a test). */
-export function runInline(o: { seed?: number; ticks: number; every?: number; scenario?: Scenario; frames?: InputFrame[] }): Run {
-  return wrap(runHeadless({ seed: o.seed ?? 1, ticks: o.ticks, snapshotEvery: o.every ?? 1, scenario: o.scenario, frames: o.frames }));
+export function runInline(o: { seed?: number; night?: 1 | 2 | 3; ticks: number; every?: number; scenario?: Scenario; frames?: InputFrame[] }): Run {
+  return wrap(runHeadless({ seed: o.seed ?? 1, night: o.night ?? 1, ticks: o.ticks, snapshotEvery: o.every ?? 1, scenario: o.scenario, frames: o.frames }));
 }

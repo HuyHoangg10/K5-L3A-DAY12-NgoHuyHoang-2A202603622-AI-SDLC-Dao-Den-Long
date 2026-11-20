@@ -1,0 +1,298 @@
+{
+  "scenarios": [
+    {
+      "name": "accel",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 6
+    },
+    {
+      "name": "jump",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 1
+    },
+    {
+      "name": "dash",
+      "night": 1,
+      "seed": 1,
+      "ticks": 100,
+      "snapshot_every": 1
+    },
+    {
+      "name": "dash_facing",
+      "night": 1,
+      "seed": 1,
+      "ticks": 30,
+      "snapshot_every": 1
+    },
+    {
+      "name": "pickup_height",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "capacity",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "deposit_full",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "deposit_partial",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "deposit_topup",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "deposit_far",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "fall",
+      "night": 1,
+      "seed": 1,
+      "ticks": 400,
+      "snapshot_every": 1
+    },
+    {
+      "name": "shade_hit",
+      "night": 1,
+      "seed": 1,
+      "ticks": 200,
+      "snapshot_every": 1
+    },
+    {
+      "name": "lose_flames",
+      "night": 1,
+      "seed": 1,
+      "ticks": 300,
+      "snapshot_every": 10
+    },
+    {
+      "name": "pulse",
+      "night": 1,
+      "seed": 1,
+      "ticks": 200,
+      "snapshot_every": 1
+    },
+    {
+      "name": "pulse_cooldown",
+      "night": 1,
+      "seed": 1,
+      "ticks": 400,
+      "snapshot_every": 10
+    },
+    {
+      "name": "pulse_no_light",
+      "night": 1,
+      "seed": 1,
+      "ticks": 20,
+      "snapshot_every": 10
+    },
+    {
+      "name": "win",
+      "night": 1,
+      "seed": 1,
+      "ticks": 50,
+      "snapshot_every": 1
+    },
+    {
+      "name": "win_last_tick",
+      "night": 1,
+      "seed": 1,
+      "ticks": 50,
+      "snapshot_every": 1
+    },
+    {
+      "name": "lose_dawn",
+      "night": 1,
+      "seed": 1,
+      "ticks": 150,
+      "snapshot_every": 10
+    },
+    {
+      "name": "safe_zone",
+      "night": 1,
+      "seed": 1,
+      "ticks": 400,
+      "snapshot_every": 10
+    },
+    {
+      "name": "lit_pushout",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 1
+    },
+    {
+      "name": "shade_detect",
+      "night": 1,
+      "seed": 1,
+      "ticks": 40,
+      "snapshot_every": 1
+    },
+    {
+      "name": "shade_random",
+      "night": 1,
+      "seed": 3,
+      "ticks": 1300,
+      "snapshot_every": 10
+    },
+    {
+      "name": "mote_spawn",
+      "night": 1,
+      "seed": 2,
+      "ticks": 500,
+      "snapshot_every": 10
+    },
+    {
+      "name": "night2_bridge",
+      "night": 2,
+      "seed": 1,
+      "ticks": 700,
+      "snapshot_every": 10
+    },
+    {
+      "name": "night2_off_bridge",
+      "night": 2,
+      "seed": 1,
+      "ticks": 200,
+      "snapshot_every": 1
+    },
+    {
+      "name": "night2_pad",
+      "night": 2,
+      "seed": 1,
+      "ticks": 130,
+      "snapshot_every": 1
+    },
+    {
+      "name": "night2_charm",
+      "night": 2,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 1
+    },
+    {
+      "name": "night3_cliff",
+      "night": 3,
+      "seed": 1,
+      "ticks": 300,
+      "snapshot_every": 10
+    },
+    {
+      "name": "night3_ramp",
+      "night": 3,
+      "seed": 1,
+      "ticks": 300,
+      "snapshot_every": 10
+    },
+    {
+      "name": "night3_pad",
+      "night": 3,
+      "seed": 1,
+      "ticks": 120,
+      "snapshot_every": 1
+    },
+    {
+      "name": "night3_wind",
+      "night": 3,
+      "seed": 1,
+      "ticks": 2200,
+      "snapshot_every": 50
+    },
+    {
+      "name": "drifter_steal",
+      "night": 2,
+      "seed": 1,
+      "ticks": 120,
+      "snapshot_every": 1
+    },
+    {
+      "name": "drifter_pulse",
+      "night": 2,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 1
+    },
+    {
+      "name": "pause",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 1
+    },
+    {
+      "name": "fall_respawn",
+      "night": 1,
+      "seed": 1,
+      "ticks": 200,
+      "snapshot_every": 1
+    },
+    {
+      "name": "random_default",
+      "night": 1,
+      "seed": 42,
+      "ticks": 2400,
+      "snapshot_every": 10
+    },
+    {
+      "name": "random_night2",
+      "night": 2,
+      "seed": 7,
+      "ticks": 2400,
+      "snapshot_every": 10
+    },
+    {
+      "name": "random_night3",
+      "night": 3,
+      "seed": 9,
+      "ticks": 2400,
+      "snapshot_every": 10
+    },
+    {
+      "name": "full_night1",
+      "night": 1,
+      "seed": 3,
+      "ticks": 18000,
+      "snapshot_every": 60
+    },
+    {
+      "name": "full_night2",
+      "night": 2,
+      "seed": 3,
+      "ticks": 19800,
+      "snapshot_every": 60
+    },
+    {
+      "name": "full_night3",
+      "night": 3,
+      "seed": 3,
+      "ticks": 21600,
+      "snapshot_every": 60
+    }
+  ]
+}
