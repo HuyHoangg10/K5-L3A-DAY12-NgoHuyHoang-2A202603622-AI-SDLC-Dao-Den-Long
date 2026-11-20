@@ -1,250 +1,204 @@
-// Creative addition: the "Lantern Cards" skill kit (Q W E R) for Mây.
-// Live mode only. Nothing in src/sim or src/headless imports this folder, so headless output cannot change.
-// Inspired by card-throwing mage kits in MOBA games; names, art and numbers here are original.
-import type { Sim } from "../sim/sim";
-import { CONSTANTS as C, DT, TUNING as T } from "../sim/tuning";
-import type { Shade } from "../sim/types";
+// Champion 1: the card reader ("Lantern Cards" kit). Live mode only.
+// Q/W/E/R structure inspired by card-throwing mage kits in MOBA games; names, art and numbers are my own.
+import { KitBase, dist2, xz, type Fx, type KitEvent, type KitFrame, type SkillInfo, type SlotHud, type Style } from "./kit";
+import { DT } from "../sim/tuning";
 
 export type CardColor = "gold" | "blue" | "red";
 export const CARD_ORDER: CardColor[] = ["gold", "blue", "red"];
+export const CARD_HEX: Record<CardColor | "plain", number> = { gold: 0xffc83a, blue: 0x55a8ff, red: 0xff6fb5, plain: 0xffefb8 };
 
-/** All kit numbers (ticks are 1/60 s). */
+/** All numbers of the kit (ticks are 1/60 s). */
 export const KIT = {
-  q: { name: "Card Fan", cost: 1, cd: 180, speed: 24, range: 14, spreadDeg: 16, hitRadius: 1.1, stun: 60 },
-  w: { name: "Roll the Card", rollStep: 6, rollMax: 180, cd: 480, holdMax: 720 },
-  e: { name: "Lucky Deck", duration: 360, cd: 1080 },
+  q: { name: "Card Fan", cost: 1, cd: 150, speed: 24, range: 14, spreadDeg: 16, hitRadius: 1.1, damage: 1 },
+  w: { name: "Roll the Card", rollStep: 6, rollMax: 180, cd: 480, goldRadius: 7, goldStun: 150, blueMana: 3, redBoost: 1.5, redTicks: 240 },
+  e: { name: "Lure Lantern", cost: 1, cd: 840, range: 10, lureTicks: 240, lureRadius: 16, burstRadius: 4.5, burstStun: 120, burstDamage: 1 },
   r: { name: "Lantern Gate", channel: 90, cd: 1500, cancelCd: 300, arrive: 2 },
-  goldStun: 180,
-  redPush: 5,
 } as const;
 
-export type SkillKey = "q" | "w" | "e" | "r";
-export interface KitFrame {
-  pressed: Record<SkillKey, boolean>;
-  camYawDeg: number;
-}
-
-export type KitEvent =
-  | { name: "cast_q"; card: CardColor | null }
-  | { name: "no_light" }
-  | { name: "on_cooldown"; key: SkillKey }
-  | { name: "roll_start" }
-  | { name: "card_locked"; card: CardColor; auto: boolean }
-  | { name: "card_expired" }
-  | { name: "card_hit"; shade: string; card: CardColor | null }
-  | { name: "deck_on" }
-  | { name: "bonus_firefly" }
-  | { name: "gate_start"; lantern: string }
-  | { name: "gate_done"; lantern: string }
-  | { name: "gate_cancel" };
-
-export interface Shot {
-  id: number;
-  pos: [number, number];
+interface Shot {
+  fx: Fx;
   dir: [number, number];
   travelled: number;
-  card: CardColor | null;
-  hitIds: Set<string>; // shared by the 3 cards of one cast: each shade is counted once per cast
+  hitIds: Set<string>; // shared by the 3 cards of one cast: a shade is hit once per cast, cards pass through
 }
 
-const dist = (ax: number, az: number, bx: number, bz: number) => Math.hypot(ax - bx, az - bz);
+export class CardKit extends KitBase {
+  readonly id = "cards";
+  readonly name = "Mây the Card Reader";
+  readonly skills: SkillInfo[] = [
+    { key: "q", name: KIT.q.name, desc: "Throw 3 cards in a fan toward the mouse. They pass through Ink Shades, stunning and thinning them." },
+    { key: "w", name: KIT.w.name, desc: "Cards flip gold, blue, pink. Press again to stop. Gold: shades around you freeze. Blue: +3 fireflies. Pink: run fast." },
+    { key: "e", name: KIT.e.name, desc: "Toss a bright lure lantern. Shades chase it for 4 s, then it bursts and stuns them." },
+    { key: "r", name: KIT.r.name, desc: "Aim the mouse near a lantern and press R. After 1.5 s you appear next to it, safe." },
+  ];
+  style: Style = { dress: 0xd9622b, hat: 0xe3c27d, scale: 1 };
 
-export class CardKit {
   shots: Shot[] = [];
-  cd: Record<SkillKey, number> = { q: 0, w: 0, e: 0, r: 0 };
-  cdTotal: Record<SkillKey, number> = { q: KIT.q.cd, w: KIT.w.cd, e: KIT.e.cd, r: KIT.r.cd };
   rolling = false;
   rollIdx = 0;
   rollTicks = 0;
-  locked: CardColor | null = null;
-  lockedLeft = 0;
-  deckLeft = 0;
   channelLeft = 0;
   gateTarget: string | null = null;
-  facing: [number, number] | null = null;
-
-  private nextShot = 1;
-  private last: [number, number];
-
-  constructor(private sim: Sim) {
-    this.last = [sim.player.pos[0], sim.player.pos[2]];
-  }
+  private lureFx: { fx: Fx; pos: [number, number] } | null = null;
+  private lureLeft = 0;
 
   get rollCard(): CardColor {
     return CARD_ORDER[this.rollIdx] as CardColor;
   }
 
-  /** Call once after every sim.step(). Returns what happened (for toasts and effects). */
-  tick(f: KitFrame): KitEvent[] {
-    const out: KitEvent[] = [];
-    const sim = this.sim;
-    if (sim.state !== "playing") return out;
-    const p = sim.player.pos;
+  slots(): SlotHud[] {
+    const mk = (key: "q" | "w" | "e" | "r", name: string, active = false, sub?: string): SlotHud => ({ key, name, cd: this.cd[key], total: this.cdTotal[key], active, sub });
+    return [
+      mk("q", KIT.q.name),
+      mk("w", KIT.w.name, this.rolling, this.rolling ? this.rollCard : undefined),
+      mk("e", KIT.e.name, this.lureLeft > 0),
+      mk("r", KIT.r.name, this.channelLeft > 0),
+    ];
+  }
 
-    // facing = last movement direction; before any movement, the camera direction
-    const dx = p[0] - this.last[0];
-    const dz = p[2] - this.last[1];
-    if (Math.hypot(dx, dz) > 1e-4) this.facing = [dx / Math.hypot(dx, dz), dz / Math.hypot(dx, dz)];
-    this.last = [p[0], p[2]];
-
-    for (const k of ["q", "w", "e", "r"] as const) if (this.cd[k] > 0) this.cd[k]--;
-
-    // reactions to what the sim just did
-    for (const e of sim.events) {
-      if (e.name === "mote_picked" && this.deckLeft > 0 && sim.player.carried < T.carry_capacity) {
-        sim.player.carried += 1;
-        sim.score += T.score.per_mote;
-        out.push({ name: "bonus_firefly" });
-      }
-      if (e.name === "player_hit" && this.channelLeft > 0) {
-        this.channelLeft = 0;
-        this.gateTarget = null;
-        this.cd.r = this.cdTotal.r = KIT.r.cancelCd;
-        out.push({ name: "gate_cancel" });
-      }
+  protected override onPlayerHit(out: KitEvent[]): void {
+    if (this.channelLeft > 0) {
+      this.channelLeft = 0;
+      this.gateTarget = null;
+      this.cd.r = this.cdTotal.r = KIT.r.cancelCd;
+      out.push({ name: "gate_cancel", msg: "The gate fizzled out" });
     }
+  }
 
+  protected update(f: KitFrame, out: KitEvent[]): void {
     this.updateShots(out);
     this.updateRoll(out);
-    if (this.deckLeft > 0) this.deckLeft--;
+    this.updateLure(out);
     if (this.channelLeft > 0 && --this.channelLeft === 0) this.finishGate(out);
 
     if (f.pressed.q) this.castQ(f, out);
     if (f.pressed.w) this.pressW(out);
-    if (f.pressed.e) this.pressE(out);
+    if (f.pressed.e) this.castE(f, out);
     if (f.pressed.r) this.pressR(f, out);
-    return out;
+    this.badge = this.rolling ? { color: CARD_HEX[this.rollCard] } : null;
   }
 
-  private aim(f: KitFrame): [number, number] {
-    if (this.facing) return this.facing;
-    const th = (f.camYawDeg * Math.PI) / 180;
-    return [Math.sin(th), Math.cos(th)];
-  }
-
+  // ---- Q -------------------------------------------------------------------------------------------
   private castQ(f: KitFrame, out: KitEvent[]): void {
-    const sim = this.sim;
-    if (this.cd.q > 0) return void out.push({ name: "on_cooldown", key: "q" });
-    if (sim.player.carried < KIT.q.cost) return void out.push({ name: "no_light" });
-    sim.player.carried -= KIT.q.cost;
+    if (this.cd.q > 0) return void out.push({ name: "on_cooldown", key: "q", msg: "Card Fan is recharging" });
+    if (!this.spend(KIT.q.cost)) return void out.push({ name: "no_light", msg: "Card Fan needs a firefly" });
     this.cd.q = this.cdTotal.q = KIT.q.cd;
-    const card = this.locked;
-    this.locked = null;
-    this.lockedLeft = 0;
-    const [ax, az] = this.aim(f);
+    const [ax, az] = this.aimDir(f);
     const hitIds = new Set<string>();
     for (const deg of [-KIT.q.spreadDeg, 0, KIT.q.spreadDeg]) {
       const a = (deg * Math.PI) / 180;
-      this.shots.push({
-        id: this.nextShot++,
-        pos: [sim.player.pos[0], sim.player.pos[2]],
-        dir: [ax * Math.cos(a) + az * Math.sin(a), -ax * Math.sin(a) + az * Math.cos(a)],
-        travelled: 0,
-        card,
-        hitIds,
-      });
+      const dir: [number, number] = [ax * Math.cos(a) + az * Math.sin(a), -ax * Math.sin(a) + az * Math.cos(a)];
+      const fx = this.addFx({ kind: "card", pos: this.pos(), dir, r: 0.5, color: CARD_HEX.plain, ttl: 9999 });
+      this.shots.push({ fx, dir, travelled: 0, hitIds });
     }
-    out.push({ name: "cast_q", card });
+    out.push({ name: "cast_q" });
   }
 
   private updateShots(out: KitEvent[]): void {
     const keep: Shot[] = [];
     for (const s of this.shots) {
       const step = KIT.q.speed * DT;
-      s.pos[0] += s.dir[0] * step;
-      s.pos[1] += s.dir[1] * step;
+      s.fx.pos[0] += s.dir[0] * step;
+      s.fx.pos[1] += s.dir[1] * step;
       s.travelled += step;
-      const target = this.sim.shades.find((sh) => dist(sh.pos[0], sh.pos[2], s.pos[0], s.pos[1]) <= KIT.q.hitRadius);
-      if (target) {
-        this.applyHit(target, s, out);
-        continue; // the card is used up
+      for (const sh of [...this.sim.shades]) {
+        if (s.hitIds.has(sh.id) || dist2(xz(sh), s.fx.pos) > KIT.q.hitRadius) continue;
+        s.hitIds.add(sh.id);
+        this.stun(sh, 60);
+        out.push({ name: "card_hit", shade: sh.id });
+        this.hit(sh, KIT.q.damage, out);
       }
       if (s.travelled < KIT.q.range) keep.push(s);
+      else s.fx.ttl = 0;
     }
     this.shots = keep;
   }
 
-  private applyHit(sh: Shade, s: Shot, out: KitEvent[]): void {
-    const sim = this.sim;
-    sh.stunTicks = Math.max(sh.stunTicks, s.card === "gold" ? KIT.goldStun : KIT.q.stun);
-    if (!s.hitIds.has(sh.id)) {
-      s.hitIds.add(sh.id);
-      sim.score += T.score.per_stun;
-      if (s.card === "blue") sim.player.carried = Math.min(T.carry_capacity, sim.player.carried + 1);
-      if (s.card === "red") {
-        sh.pos[0] += s.dir[0] * KIT.redPush;
-        sh.pos[2] += s.dir[1] * KIT.redPush;
-        this.keepOutOfLanterns(sh);
-      }
-      out.push({ name: "card_hit", shade: sh.id, card: s.card });
-    }
-  }
-
-  private keepOutOfLanterns(sh: Shade): void {
-    for (const l of this.sim.lanterns) {
-      const dx = sh.pos[0] - l.pos[0];
-      const dz = sh.pos[2] - l.pos[2];
-      const d = Math.hypot(dx, dz);
-      if (d < T.safe_radius) {
-        sh.pos[0] = l.pos[0] + (d > C.eps ? dx / d : 1) * T.safe_radius;
-        sh.pos[2] = l.pos[2] + (d > C.eps ? dz / d : 0) * T.safe_radius;
-      }
-    }
-  }
-
+  // ---- W -------------------------------------------------------------------------------------------
   private updateRoll(out: KitEvent[]): void {
-    if (this.rolling) {
-      this.rollTicks++;
-      if (this.rollTicks % KIT.w.rollStep === 0) this.rollIdx = (this.rollIdx + 1) % CARD_ORDER.length;
-      if (this.rollTicks >= KIT.w.rollMax) this.lock(true, out);
-    } else if (this.locked && --this.lockedLeft <= 0) {
-      this.locked = null;
-      out.push({ name: "card_expired" });
-    }
-  }
-
-  private lock(auto: boolean, out: KitEvent[]): void {
-    this.rolling = false;
-    this.locked = this.rollCard;
-    this.lockedLeft = KIT.w.holdMax;
-    this.cd.w = this.cdTotal.w = KIT.w.cd;
-    out.push({ name: "card_locked", card: this.locked, auto });
+    if (!this.rolling) return;
+    this.rollTicks++;
+    if (this.rollTicks % KIT.w.rollStep === 0) this.rollIdx = (this.rollIdx + 1) % CARD_ORDER.length;
+    if (this.rollTicks >= KIT.w.rollMax) this.pick(out, true);
   }
 
   private pressW(out: KitEvent[]): void {
-    if (this.rolling) return this.lock(false, out);
-    if (this.locked) return; // already holding a card
-    if (this.cd.w > 0) return void out.push({ name: "on_cooldown", key: "w" });
+    if (this.rolling) return this.pick(out, false);
+    if (this.cd.w > 0) return void out.push({ name: "on_cooldown", key: "w", msg: "Roll the Card is recharging" });
     this.rolling = true;
     this.rollTicks = 0;
     this.rollIdx = 0;
-    out.push({ name: "roll_start" });
+    out.push({ name: "roll_start", msg: "Press W again to stop on a card" });
   }
 
-  private pressE(out: KitEvent[]): void {
-    if (this.cd.e > 0) return void out.push({ name: "on_cooldown", key: "e" });
-    this.deckLeft = KIT.e.duration;
+  /** The card is chosen and acts at once. */
+  private pick(out: KitEvent[], auto: boolean): void {
+    const card = this.rollCard;
+    this.rolling = false;
+    this.cd.w = this.cdTotal.w = KIT.w.cd;
+    const p = this.pos();
+    if (card === "gold") {
+      const hit = this.shadesNear(p, KIT.w.goldRadius);
+      for (const s of hit) this.stun(s, KIT.w.goldStun);
+      this.addFx({ kind: "disc", pos: p, r: KIT.w.goldRadius, color: CARD_HEX.gold, ttl: 40 });
+      out.push({ name: "card_picked", card, frozen: hit.map((s) => s.id), auto, msg: hit.length ? `Gold card: ${hit.length} shade(s) frozen` : "Gold card: nothing near you" });
+    } else if (card === "blue") {
+      const before = this.carried();
+      this.gain(KIT.w.blueMana);
+      this.addFx({ kind: "ring", pos: p, r: 2.5, color: CARD_HEX.blue, ttl: 30 });
+      out.push({ name: "card_picked", card, gained: this.carried() - before, auto, msg: `Blue card: +${this.carried() - before} fireflies` });
+    } else {
+      this.boost(KIT.w.redBoost, KIT.w.redTicks);
+      this.addFx({ kind: "ring", pos: p, r: 2.5, color: CARD_HEX.red, ttl: 30 });
+      out.push({ name: "card_picked", card, auto, msg: "Pink card: run fast for 4 s" });
+    }
+  }
+
+  // ---- E (new): Lure Lantern -------------------------------------------------------------------------
+  private castE(f: KitFrame, out: KitEvent[]): void {
+    if (this.cd.e > 0) return void out.push({ name: "on_cooldown", key: "e", msg: "Lure Lantern is recharging" });
+    if (!this.spend(KIT.e.cost)) return void out.push({ name: "no_light", msg: "Lure Lantern needs a firefly" });
     this.cd.e = this.cdTotal.e = KIT.e.cd;
-    out.push({ name: "deck_on" });
+    const pos = this.aimPoint(f, KIT.e.range);
+    this.lureLeft = KIT.e.lureTicks;
+    this.lure(pos, KIT.e.lureTicks, KIT.e.lureRadius);
+    const fx = this.addFx({ kind: "pillar", pos, r: 0.7, color: 0xffd27a, ttl: KIT.e.lureTicks });
+    this.addFx({ kind: "ring", pos, r: KIT.e.burstRadius, color: 0xffd27a, ttl: KIT.e.lureTicks });
+    this.lureFx = { fx, pos };
+    out.push({ name: "lure_on", msg: "Shades are drawn to the lure lantern" });
   }
 
+  private updateLure(out: KitEvent[]): void {
+    if (this.lureLeft <= 0 || !this.lureFx) return;
+    if (--this.lureLeft > 0) return;
+    const pos = this.lureFx.pos;
+    this.lureFx = null;
+    this.addFx({ kind: "disc", pos, r: KIT.e.burstRadius, color: 0xfff0b0, ttl: 30 });
+    for (const s of this.shadesNear(pos, KIT.e.burstRadius)) {
+      this.stun(s, KIT.e.burstStun);
+      this.hit(s, KIT.e.burstDamage, out);
+    }
+    out.push({ name: "lure_burst" });
+  }
+
+  // ---- R -------------------------------------------------------------------------------------------
   private pressR(f: KitFrame, out: KitEvent[]): void {
     if (this.channelLeft > 0) return;
-    if (this.cd.r > 0) return void out.push({ name: "on_cooldown", key: "r" });
-    // the lantern most in front of the camera
-    const th = (f.camYawDeg * Math.PI) / 180;
-    const fx = Math.sin(th);
-    const fz = Math.cos(th);
-    const p = this.sim.player.pos;
+    if (this.cd.r > 0) return void out.push({ name: "on_cooldown", key: "r", msg: "Lantern Gate is recharging" });
+    // the lantern nearest to the mouse; without a mouse position, the one most in front of the camera
+    const p = this.pos();
     let best: string | null = null;
-    let bestDot = -2;
+    let bestScore = Infinity;
+    const th = (f.camYawDeg * Math.PI) / 180;
     for (const l of this.sim.lanterns) {
-      const vx = l.pos[0] - p[0];
-      const vz = l.pos[2] - p[2];
-      const d = Math.hypot(vx, vz) || 1;
-      const dot = (vx * fx + vz * fz) / d;
-      if (dot > bestDot) {
-        bestDot = dot;
+      let score: number;
+      if (f.aim) score = dist2(xz(l), f.aim);
+      else {
+        const v: [number, number] = [l.pos[0] - p[0], l.pos[2] - p[1]];
+        score = -(v[0] * Math.sin(th) + v[1] * Math.cos(th)) / (Math.hypot(v[0], v[1]) || 1);
+      }
+      if (score < bestScore) {
+        bestScore = score;
         best = l.id;
       }
     }
@@ -252,7 +206,10 @@ export class CardKit {
     this.gateTarget = best;
     this.channelLeft = KIT.r.channel;
     this.cdTotal.r = KIT.r.cd;
-    out.push({ name: "gate_start", lantern: best });
+    const l = this.sim.lanterns.find((x) => x.id === best)!;
+    this.addFx({ kind: "pillar", pos: xz(l), r: 1, color: 0xffd27a, ttl: KIT.r.channel });
+    this.addFx({ kind: "ring", pos: p, r: 3, color: 0xffd27a, ttl: KIT.r.channel });
+    out.push({ name: "gate_start", lantern: best, msg: `Lantern Gate opening toward ${best}... stay safe` });
   }
 
   private finishGate(out: KitEvent[]): void {
@@ -263,14 +220,12 @@ export class CardKit {
     const vx = p[0] - l.pos[0];
     const vz = p[2] - l.pos[2];
     const d = Math.hypot(vx, vz);
-    const nx = d > C.eps ? vx / d : 0;
-    const nz = d > C.eps ? vz / d : -1;
-    p[0] = l.pos[0] + nx * KIT.r.arrive;
-    p[2] = l.pos[2] + nz * KIT.r.arrive;
+    p[0] = l.pos[0] + (d > 1e-9 ? vx / d : 0) * KIT.r.arrive;
+    p[2] = l.pos[2] + (d > 1e-9 ? vz / d : -1) * KIT.r.arrive;
     p[1] = 0;
     this.sim.player.vy = 0;
-    this.last = [p[0], p[2]];
     this.cd.r = this.cdTotal.r = KIT.r.cd;
+    this.addFx({ kind: "disc", pos: [p[0], p[2]], r: 3, color: 0xfff0b0, ttl: 30 });
     out.push({ name: "gate_done", lantern: l.id });
   }
 }
