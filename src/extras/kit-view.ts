@@ -134,17 +134,17 @@ export class KitHud {
     style.textContent = `
       #skills { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
       #skills .row { display: flex; gap: 10px; }
-      #skills .sk { position: relative; width: 104px; height: 76px; border-radius: 14px; background: rgba(14,18,46,0.78); border: 2px solid rgba(255,199,102,0.5); overflow: hidden; text-align: center; }
-      #skills .sk .k { position: absolute; top: 3px; left: 7px; font-size: 14px; color: #ffc766; font-weight: bold; }
-      #skills .sk .n { position: absolute; bottom: 4px; left: 0; width: 100%; font-size: 11px; line-height: 1.1; white-space: nowrap; text-align: center; }
-      #skills .sk .s { position: absolute; top: 22px; left: 0; width: 100%; font-size: 20px; }
+      #skills .sk { position: relative; width: 156px; height: 84px; border-radius: 14px; background: rgba(14,18,46,0.78); border: 2px solid rgba(255,199,102,0.5); overflow: hidden; text-align: center; }
+      #skills .sk .k { position: absolute; top: 3px; left: 7px; font-size: 18px; color: #ffc766; font-weight: bold; }
+      #skills .sk .n { position: absolute; bottom: 4px; left: 0; width: 100%; font-size: 18px; line-height: 1.1; white-space: nowrap; text-align: center; }
+      #skills .sk .s { position: absolute; top: 24px; left: 0; width: 100%; font-size: 20px; }
       #skills .sk .f { position: absolute; left: 0; bottom: 0; width: 100%; background: rgba(5,6,20,0.72); }
       #skills .sk.ready { border-color: #ffc766; box-shadow: 0 0 12px rgba(255,170,70,0.55); }
       #skills .sk.on { border-color: #fff2b0; box-shadow: 0 0 16px rgba(255,240,170,0.9); }
       #skills .sk.off { opacity: 0.55; }
-      #skills .meter { width: 300px; height: 14px; border-radius: 8px; background: rgba(14,18,46,0.78); border: 1px solid rgba(255,199,102,0.5); position: relative; overflow: hidden; }
+      #skills .meter { width: 300px; height: 22px; border-radius: 8px; background: rgba(14,18,46,0.78); border: 1px solid rgba(255,199,102,0.5); position: relative; overflow: hidden; }
       #skills .meter i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #c26a2a, #ffc766); }
-      #skills .meter span { position: absolute; width: 100%; text-align: center; font-size: 10px; line-height: 14px; }
+      #skills .meter span { position: absolute; width: 100%; text-align: center; font-size: 18px; line-height: 22px; }
     `;
     document.head.appendChild(style);
     this.root = document.createElement("div");
@@ -191,7 +191,7 @@ export class KitHud {
     c.el.classList.toggle("ready", s.cd === 0 && !s.disabled);
     c.el.classList.toggle("on", s.active);
     c.el.classList.toggle("off", !!s.disabled);
-    c.sub.style.fontSize = s.sub && s.cd === 0 ? "13px" : "20px";
+    c.sub.style.fontSize = s.sub && s.cd === 0 ? "18px" : "20px";
     c.sub.textContent = s.cd > 0 ? String(Math.ceil(s.cd / 60)) : (s.sub ?? "");
   }
 }

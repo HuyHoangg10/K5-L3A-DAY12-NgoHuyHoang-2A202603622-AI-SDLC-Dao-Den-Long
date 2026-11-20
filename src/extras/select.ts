@@ -10,12 +10,12 @@ export class ChampionSelect {
     const style = document.createElement("style");
     style.textContent = `
       #champs { display: flex; gap: 12px; justify-content: center; margin: 14px 0 4px; flex-wrap: wrap; }
-      #champs .ch { width: 205px; text-align: left; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,199,102,0.25); cursor: pointer; }
+      #champs .ch { width: 228px; text-align: left; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,199,102,0.25); cursor: pointer; }
       #champs .ch:hover { background: rgba(255,255,255,0.09); }
       #champs .ch.sel { border-color: #ffc766; box-shadow: 0 0 18px rgba(255,170,70,0.45); background: rgba(255,199,102,0.12); }
-      #champs .ch h3 { margin: 0 0 2px; font-size: 16px; color: #ffc766; }
-      #champs .ch p { margin: 0 0 6px; font-size: 12px; opacity: 0.85; line-height: 1.3; }
-      #champs .ch li { font-size: 11.5px; line-height: 1.3; margin: 3px 0; list-style: none; }
+      #champs .ch h3 { margin: 0 0 2px; font-size: 18px; color: #ffc766; }
+      #champs .ch p { margin: 0 0 6px; font-size: 18px; opacity: 0.85; line-height: 1.3; }
+      #champs .ch li { font-size: 18px; line-height: 1.3; margin: 3px 0; list-style: none; }
       #champs .ch ul { margin: 0; padding: 0; }
       #champs .ch b { color: #ffc766; }
     `;

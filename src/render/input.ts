@@ -51,6 +51,8 @@ export class InputState {
         }
         return;
       }
+      const typing = (e.target as HTMLElement | null)?.tagName === "INPUT"; // the name box of the leaderboard
+      if (typing && k !== "enter" && k !== "escape") return; // letters typed there are not game keys
       if (e.repeat) return;
       this.onAnyKey();
       const b = this.bindings;
@@ -68,7 +70,7 @@ export class InputState {
       if (k === "escape") this.onEscape();
       if (k === b.pause) this.onPause();
       if (k === "enter") {
-        (document.activeElement as HTMLElement | null)?.blur?.(); // a focused button must not also fire on Enter
+        if (!typing) (document.activeElement as HTMLElement | null)?.blur?.(); // a focused button must not also fire on Enter
         e.preventDefault();
         this.onEnter();
       }

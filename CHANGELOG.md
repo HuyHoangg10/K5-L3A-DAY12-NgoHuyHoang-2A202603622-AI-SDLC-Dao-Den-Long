@@ -2,6 +2,18 @@
 
 Breaking changes (things that behave differently from the previous tag) are marked **BREAKING**.
 
+## phase-3 (contract v1.2, Ticket-03)
+
+- **BREAKING** Lanterns have fuel: 100 when lit, -1 per second, 0 = the lantern goes out (`lantern_out`). Snapshot lanterns gain `fuel`, `ever_lit`, `relit_count`; the player gains `capacity`. `game.contract.json` is v1.2 with the new tuning keys (`fuel_max`, `fuel_decay_per_s`, `fuel_per_mote`, `relight_cost`, `win_ratio`, `drain_per_s`, `low_fuel_threshold`, `capacity_max`).
+- **BREAKING** Win rule: the night is won **at dawn** with at least `ceil(0.6 x lanterns)` lit (reason `dawn_survived`); lighting every lantern no longer ends the night (the reason `all_lit` is gone). Loss at dawn keeps the reason `dawn`.
+- **BREAKING** Night length is 240 / 270 / 300 s (was 300 / 330 / 360). Full nights are 14,400 / 16,200 / 18,000 ticks.
+- **BREAKING** Score: 5 per firefly put in (was 10); +100 the first time a lantern is lit, +40 when it is lit again; at dawn 50 + floor(fuel) per lit lantern and 50 per flame; **no time bonus**; a glow on a draining shade gives 15.
+- **BREAKING** A lantern only has a safe zone while it has 30 fuel or more.
+- **BREAKING** `lantern_lit` has `relight: true|false`. New events `refuel`, `fuel_drain`, `lantern_out`; new shade state `drain`.
+- New: refuel (interact with a lit lantern that is not full), relight for 5 fireflies, shades walk to weak lanterns and drain them (scenario field `target_lantern_id` sends one by hand), capacity 10 + 2 per lighting up to 20 (scenario field `successful_lights`).
+- Tests: `tests/phase3.test.ts` (34 tests) for every rule above; `tests/rules.test.ts` and `tests/io.test.ts` were updated for the new numbers. The scenarios `win` and `win_last_tick` were removed because the rule they tested no longer exists; 24 new scenarios were added.
+- Live game: fuel bar per lantern in the HUD and above each lantern, blinking and a warning sign below 30, unlit lanterns hang deflated, a thin line from a draining shade to its lantern, refuel hint, capacity in the HUD.
+
 ## phase-2 (contract v1.1, Ticket-02)
 
 - **BREAKING** All tuning numbers are now the lab's standard numbers (pickup radius 1.0, interact radius 2.0, lantern cost 10, pulse 3 fireflies / 5 m / 3 s, safe zone 6 m, night 1 300 s, ...). `game.contract.json` is v1.1 with the five new keys.

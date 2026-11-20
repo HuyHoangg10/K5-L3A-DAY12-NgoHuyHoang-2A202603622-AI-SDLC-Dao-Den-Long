@@ -74,3 +74,20 @@ The standard numbers replace my own Phase 1 numbers (the old table above is what
 | C-8 | New E | The card reader's E is my own invention: Lure Lantern. | | extras.test.ts |
 | C-9 | Numbers | All numbers are in `KIT` (cards.ts), `CUB` (cub.ts), `WEAVER` (weaver.ts). Cooldowns and durations are whole ticks. | Live only. | tests |
 | C-10 | Phase 2 | Superseded: the board now shows Phase 2 and 3 (Ticket-02, Ticket-03) and Phase 4; Phase 2 is built (see P2-* below) and tagged `phase-2` once the independent review is answered. | | lab board |
+
+## Phase 3 (Ticket-03) gap-fillers
+
+| id | topic | what I did | risk if the grader does it differently | check |
+|---|---|---|---|---|
+| P3-1 | Fuel is stored in 1/60 units | one tick of decay is exactly 1 unit, so 60 ticks = 1 fuel with no float drift. Output shows 1 decimal. | A grader that computes 1/60 in floats could differ in the 3rd decimal; the output is rounded to 1 decimal so only a value like 29.98 vs 30.0 matters (see P3-2) | phase3.test.ts "fuel is exact" |
+| P3-2 | Boundary at 30 | the safe zone needs fuel >= 30 *after* the tick's decay, so a lantern with 30 + 1/60 at the start of a tick still has it, and one with exactly 30 does not | Off-by-one-tick of the safe zone | phase3.test.ts "exactly 30 fuel" |
+| P3-3 | Refuel formula | `used = min(carried, ceil((100 - fuel) / 10))`, fuel +10 each, capped at 100; +5 points each. Nothing carried = nothing happens | | phase3.test.ts |
+| P3-4 | Which lantern takes the press | the nearest lantern within 2 m that is unlit or lit-but-not-full; ties go to the smaller id | Another tie rule | rules.test.ts |
+| P3-5 | Relight | needs 5 fireflies when it was lit before (`ever_lit`), a partly paid relight stays unlit and remembers the fireflies, a lantern that goes out forgets what was put in | | phase3.test.ts |
+| P3-6 | Drain mechanics | a wandering shade walks to the nearest lit lantern with fuel < 30 (ties: smaller id), stops within 2 m and drains 5 fuel/s; `fuel_drain` is written every 60 ticks of draining, per shade; it turns to chase when Mây is within 6 m; it goes back to wander when the lantern is out, refuelled to 30+, or it is pushed more than 2 m away | The ticket gave the numbers but not the stop distance (2 m) | phase3.test.ts |
+| P3-7 | Pulse on a draining shade | +15 instead of +5, drain stops, stun as usual | | phase3.test.ts |
+| P3-8 | Refuel to 30 pushes shades out | same 30-tick harmless push-out as a new lighting | | phase3.test.ts |
+| P3-9 | Capacity | `10 + 2 x successful lightings`, max 20; a relight counts, a refuel does not, lanterns lit by a scenario do not; starts again at 10 each night | | phase3.test.ts |
+| P3-10 | Win at dawn | decided in the same place as the old dawn loss; needed lit = `ceil(0.6 x total)`, with 1e-9 slack so 0.6 x 5 = 3.0000000000000004 does not become 4 | | rules.test.ts |
+| P3-11 | Dawn score | `sum(50 + floor(fuel)) over lit lanterns + 50 x flames`; nothing for the time | | phase3.test.ts |
+| P3-12 | Night 1-3 durations | 240 / 270 / 300 s | | io.test.ts |

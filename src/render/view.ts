@@ -3,6 +3,7 @@ import { Rng } from "../sim/rng";
 import type { Shape } from "../sim/maps";
 import type { Sim } from "../sim/sim";
 import { TUNING as T } from "../sim/tuning";
+import { Swarm, merged, painted } from "./swarm";
 
 /** Standard palette of Ticket-02 (max 10% deviation per RGB channel). */
 export const PAL = {
@@ -20,6 +21,8 @@ interface LanternView {
   light: THREE.PointLight;
   ring: THREE.Mesh;
   halo: THREE.Mesh;
+  bar: THREE.Group; // fuel bar above the lantern, always facing the camera
+  fill: THREE.Mesh;
 }
 interface Burst {
   mesh: THREE.Mesh;
@@ -39,8 +42,9 @@ export class View {
   readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500);
   private world = new THREE.Group(); // everything that depends on the night
   private lanterns = new Map<string, LanternView>();
-  private motes = new Map<string, THREE.Group>();
-  private shades = new Map<string, THREE.Group>();
+  private motesSw!: Swarm;
+  private shadesSw!: Swarm;
+  private beams!: THREE.LineSegments;
   private drifters = new Map<string, THREE.Group>();
   private charms = new Map<string, THREE.Group>();
   private leaves: THREE.Mesh[] = [];
@@ -60,6 +64,12 @@ export class View {
   private time = 0;
   private clouds: THREE.Mesh[] = [];
   colorBlind = false;
+  /** no flicker, bobbing, blinking, flashes or wind leaves (Settings > Reduce motion) */
+  reduceMotion = false;
+  /** benchmark camera: at angle `angle` (rad, counter-clockwise seen from above, 0 = +X) on a circle around (cx, cz); always looks at the centre */
+  orbit: { radius: number; height: number; angle: number; cx: number; cz: number } | null = null;
+  /** fixed canvas size (benchmark: 1280x720, pixel ratio 1) instead of the window size */
+  fixedSize: [number, number] | null = null;
 
   constructor(host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -75,13 +85,14 @@ export class View {
     this.scene.add(moon);
     this.buildSky();
     this.buildMay();
+    this.buildSwarms();
     this.resize();
     window.addEventListener("resize", () => this.resize());
   }
 
   resize(): void {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const [w, h] = this.fixedSize ?? [window.innerWidth, window.innerHeight];
+    if (this.fixedSize) this.renderer.setPixelRatio(1);
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -99,6 +110,42 @@ export class View {
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
     this.scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xfff2cf, size: 1.6, sizeAttenuation: false, fog: false })));
+  }
+
+  /** Shades and fireflies are drawn as instanced swarms: a few draw calls however many there are. */
+  private buildSwarms(): void {
+    const body = new THREE.SphereGeometry(0.7, 14, 10);
+    body.scale(1, 1.1, 1);
+    const drip = new THREE.ConeGeometry(0.55, 1.0, 10);
+    drip.rotateX(Math.PI);
+    drip.translate(0, -0.8, 0);
+    const e1 = new THREE.SphereGeometry(0.11, 6, 5);
+    e1.translate(-0.22, 0.12, 0.58);
+    const e2 = new THREE.SphereGeometry(0.11, 6, 5);
+    e2.translate(0.22, 0.12, 0.58);
+    const shadeGeo = merged([painted(body, PAL.shade), painted(drip, PAL.shade), painted(e1, 0xd9b8ff), painted(e2, 0xd9b8ff)]);
+    this.shadesSw = new Swarm(
+      this.scene,
+      [
+        { geometry: shadeGeo, material: new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, emissive: 0x2c0a55, emissiveIntensity: 0.9, roughness: 0.5 }), tint: true },
+        { geometry: new THREE.SphereGeometry(1.15, 10, 8), material: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, depthWrite: false }), tint: true },
+      ],
+      320,
+    );
+    this.motesSw = new Swarm(
+      this.scene,
+      [
+        { geometry: new THREE.SphereGeometry(0.17, 8, 6), material: new THREE.MeshBasicMaterial({ color: PAL.moteCore }), tint: false },
+        { geometry: new THREE.SphereGeometry(0.46, 8, 6), material: new THREE.MeshBasicMaterial({ color: PAL.moteGlow, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }), tint: false },
+      ],
+      400,
+    );
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(40 * 6), 3));
+    g.setDrawRange(0, 0);
+    this.beams = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xff7a3c }));
+    this.beams.frustumCulled = false;
+    this.scene.add(this.beams);
   }
 
   private buildMay(): void {
@@ -301,37 +348,15 @@ export class View {
     ring.position.y = 0.06;
     const halo = new THREE.Mesh(new THREE.SphereGeometry(1.7, 16, 12), new THREE.MeshBasicMaterial({ color: PAL.lampOn, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     halo.position.y = 3.75;
-    g.add(post, cap, body, base, light, ring, halo);
+    const bar = new THREE.Group();
+    bar.position.y = 5.7;
+    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.34), new THREE.MeshBasicMaterial({ color: 0x05061a, transparent: true, opacity: 0.75, depthWrite: false }));
+    const fill = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 0.2), new THREE.MeshBasicMaterial({ color: PAL.lampOn, depthWrite: false }));
+    fill.position.z = 0.01;
+    bar.add(barBg, fill);
+    g.add(post, cap, body, base, light, ring, halo, bar);
     this.scene.add(g);
-    return { group: g, body, light, ring, halo };
-  }
-
-  private makeMote(): THREE.Group {
-    const g = new THREE.Group();
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), new THREE.MeshBasicMaterial({ color: PAL.moteCore })));
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.46, 10, 8), new THREE.MeshBasicMaterial({ color: PAL.moteGlow, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false })));
-    this.scene.add(g);
-    return g;
-  }
-
-  private makeShade(): THREE.Group {
-    const g = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({ color: PAL.shade, emissive: 0x2c0a55, emissiveIntensity: 0.9, roughness: 0.5 });
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.7, 18, 14), mat);
-    body.scale.y = 1.1;
-    const drip = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.0, 12), mat);
-    drip.rotation.x = Math.PI;
-    drip.position.y = -0.8;
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xd9b8ff });
-    const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), eyeMat);
-    const e2 = e1.clone();
-    e1.position.set(-0.22, 0.12, 0.58);
-    e2.position.set(0.22, 0.12, 0.58);
-    const aura = new THREE.Mesh(new THREE.SphereGeometry(1.15, 14, 10), new THREE.MeshBasicMaterial({ color: PAL.shadeEdge, transparent: true, opacity: 0.14, depthWrite: false }));
-    g.add(body, drip, e1, e2, aura);
-    g.userData = { mat, eyes: eyeMat, aura };
-    this.scene.add(g);
-    return g;
+    return { group: g, body, light, ring, halo, bar, fill };
   }
 
   private makeDrifter(): THREE.Group {
@@ -374,14 +399,10 @@ export class View {
   /** Remove everything dynamic so a new sim can be shown. */
   reset(): void {
     for (const l of this.lanterns.values()) this.scene.remove(l.group);
-    for (const m of this.motes.values()) this.scene.remove(m);
-    for (const s of this.shades.values()) this.scene.remove(s);
     for (const d of this.drifters.values()) this.scene.remove(d);
     for (const c of this.charms.values()) this.scene.remove(c);
     for (const b of this.bursts) this.scene.remove(b.mesh);
     this.lanterns.clear();
-    this.motes.clear();
-    this.shades.clear();
     this.drifters.clear();
     this.charms.clear();
     this.leaves = [];
@@ -410,79 +431,78 @@ export class View {
     }
     this.lastPos.set(p[0], p[1], p[2]);
     this.may.rotation.y = this.heading;
-    this.mayBody.position.y = moving && P.grounded ? Math.abs(Math.sin(t * 12)) * 0.07 : 0;
-    this.mayBody.rotation.z = moving ? Math.sin(t * 12) * 0.05 : 0;
-    this.may.visible = (!sim.invulnerable || Math.floor(t * 14) % 2 === 0) && P.fallWait === 0;
-    this.mayLight.intensity = 24 + Math.sin(t * 7) * 3 + (P.charm > 0 ? 10 : 0);
+    this.mayBody.position.y = moving && P.grounded && !this.reduceMotion ? Math.abs(Math.sin(t * 12)) * 0.07 : 0;
+    this.mayBody.rotation.z = moving && !this.reduceMotion ? Math.sin(t * 12) * 0.05 : 0;
+    this.may.visible = (!sim.invulnerable || this.reduceMotion || Math.floor(t * 14) % 2 === 0) && P.fallWait === 0;
+    this.mayLight.intensity = 24 + (this.reduceMotion ? 0 : Math.sin(t * 7) * 3) + (P.charm > 0 ? 10 : 0);
 
-    // lanterns
+    // lanterns: brightness follows the fuel; a weak one blinks; an unlit one hangs deflated
+    const wob = this.reduceMotion ? 0 : 1;
     for (const l of sim.lanterns) {
       let v = this.lanterns.get(l.id);
       if (!v) {
         v = this.makeLantern(l.pos[0], l.pos[1], l.pos[2]);
         this.lanterns.set(l.id, v);
       }
-      const fill = l.lit ? 1 : l.deposited / T.lantern_cost;
+      const fuel = l.fuel60 / 60;
+      const frac = Math.min(1, fuel / T.fuel_max);
+      const low = l.lit && fuel < T.low_fuel_threshold;
+      const blink = low && !this.reduceMotion && Math.floor(t * 6) % 2 === 0 ? 0.3 : 1;
+      const need = l.everLit ? T.relight_cost : T.lantern_cost;
+      const fill = l.lit ? 1 : l.deposited / need;
       const mat = v.body.material as THREE.MeshStandardMaterial;
       mat.emissive.setHex(l.lit ? PAL.lampOn : 0x8a3a00);
-      mat.emissiveIntensity = l.lit ? 1.5 + Math.sin(t * 5 + l.pos[0]) * 0.2 : 0.1 + fill * 1.2;
+      mat.emissiveIntensity = l.lit ? (0.5 + 1.1 * frac + Math.sin(t * 5 + l.pos[0]) * 0.2 * wob) * blink : 0.1 + fill * 1.2;
       mat.color.setHex(l.lit ? PAL.lampCore : PAL.lampOff);
-      v.light.intensity = l.lit ? 70 + Math.sin(t * 4 + l.pos[2]) * 6 : fill * 12;
+      v.light.intensity = l.lit ? (22 + 52 * frac + Math.sin(t * 4 + l.pos[2]) * 6 * wob) * blink : fill * 12;
       (v.ring.material as THREE.MeshBasicMaterial).opacity = 0.35;
-      (v.halo.material as THREE.MeshBasicMaterial).opacity = l.lit ? 0.13 : fill * 0.1;
-      v.ring.visible = l.lit; // the safe circle only exists around lit lanterns
+      (v.halo.material as THREE.MeshBasicMaterial).opacity = l.lit ? (0.03 + 0.1 * frac) * blink : fill * 0.1;
+      v.ring.visible = l.lit && !low; // the safe circle only exists around a lit lantern with at least 30 fuel
+      v.body.scale.set(l.lit ? 1 : 0.8, l.lit ? 1 : 0.7, l.lit ? 1 : 0.8); // deflated when unlit
+      v.body.position.y = l.lit ? 3.75 : 3.75 - 0.2;
+      v.bar.visible = l.lit;
+      v.bar.quaternion.copy(this.camera.quaternion);
+      v.fill.scale.x = Math.max(0.02, frac);
+      v.fill.position.x = -1.05 * (1 - Math.max(0.02, frac));
+      (v.fill.material as THREE.MeshBasicMaterial).color.setHex(low ? (this.colorBlind ? 0xffffff : 0xff5a5f) : this.colorBlind ? 0x00b3ff : PAL.lampOn);
     }
 
-    // motes
-    const seen = new Set<string>();
+    // motes (instanced)
+    this.motesSw.begin();
     let i = 0;
     for (const m of sim.motes) {
-      seen.add(m.id);
-      let g = this.motes.get(m.id);
-      if (!g) {
-        g = this.makeMote();
-        this.motes.set(m.id, g);
-      }
-      g.visible = !(m.ttl !== null && m.ttl < 120 && Math.floor(t * 10) % 2 === 0);
-      g.scale.setScalar(m.kind === "dropped" ? 0.8 : 1);
-      g.position.set(m.pos[0], m.pos[1] + 0.75 + Math.sin(t * 2.2 + i * 1.7) * 0.18, m.pos[2]);
       i++;
+      if (m.ttl !== null && m.ttl < 120 && !this.reduceMotion && Math.floor(t * 10) % 2 === 0) continue; // a dropped firefly blinks before it fades
+      const k = m.kind === "dropped" ? 0.8 : 1;
+      this.motesSw.add(m.pos[0], m.pos[1] + 0.75 + Math.sin(t * 2.2 + i * 1.7) * 0.18 * wob, m.pos[2], 0, k, k, 0xffffff);
     }
-    for (const [id, g] of this.motes) {
-      if (!seen.has(id)) {
-        this.scene.remove(g);
-        this.motes.delete(id);
-      }
-    }
+    this.motesSw.end();
 
-    // shades
-    const seenS = new Set<string>();
+    // shades (instanced); a draining shade is joined to its lantern by a thin line
+    this.shadesSw.begin();
+    const beamPos = (this.beams.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array;
+    let nb = 0;
     for (const s of sim.shades) {
-      seenS.add(s.id);
-      let g = this.shades.get(s.id);
-      if (!g) {
-        g = this.makeShade();
-        this.shades.set(s.id, g);
-      }
       const st = sim.shadeState(s);
       const stunned = st === "stunned";
-      g.position.set(s.pos[0], s.pos[1] + (stunned ? -0.1 : Math.sin(t * 4 + s.pos[0]) * 0.12), s.pos[2]);
-      g.rotation.y = Math.atan2(p[0] - s.pos[0], p[2] - s.pos[2]);
+      const draining = st === "drain";
+      const y = s.pos[1] + (stunned ? -0.1 : Math.sin(t * 4 + s.pos[0]) * 0.12 * wob);
       const grow = st === "spawning" ? 1 - sim.stateTicksLeft(s) / 60 : 1;
-      const k = (stunned ? 0.85 : 1 + Math.sin(t * 6 + s.pos[2]) * 0.06) * (0.2 + 0.8 * grow);
-      g.scale.set(k, stunned ? k * 0.8 : k, k);
-      const ud = g.userData as { mat: THREE.MeshStandardMaterial; eyes: THREE.MeshBasicMaterial; aura: THREE.Mesh };
-      ud.mat.color.setHex(stunned ? PAL.shadeStun : PAL.shade);
-      ud.mat.emissive.setHex(stunned ? 0x3a4a90 : 0x2c0a55);
-      (ud.aura.material as THREE.MeshBasicMaterial).color.setHex(this.colorBlind ? 0x00b3ff : PAL.shadeEdge);
-      ud.eyes.color.setHex(this.colorBlind ? 0x00b3ff : stunned ? 0xcfe0ff : 0xd9b8ff);
-    }
-    for (const [id, g] of this.shades) {
-      if (!seenS.has(id)) {
-        this.scene.remove(g);
-        this.shades.delete(id);
+      const k = (stunned ? 0.85 : 1 + Math.sin(t * 6 + s.pos[2]) * 0.06 * wob) * (0.2 + 0.8 * grow);
+      const aura = draining ? (this.colorBlind ? 0xffffff : 0xff7a3c) : stunned ? 0x6a86d0 : this.colorBlind ? 0x00b3ff : PAL.shadeEdge;
+      this.shadesSw.add(s.pos[0], y, s.pos[2], Math.atan2(p[0] - s.pos[0], p[2] - s.pos[2]), k, stunned ? k * 0.8 : k, stunned ? 0x8890b8 : 0xffffff, aura);
+      if (draining && s.drain && nb < 40) {
+        const lan = sim.lanterns.find((x) => x.id === s.drain?.lantern);
+        if (lan) {
+          beamPos.set([s.pos[0], y + 0.3, s.pos[2], lan.pos[0], lan.pos[1] + 3.8, lan.pos[2]], nb * 6);
+          nb++;
+        }
       }
     }
+    this.shadesSw.end();
+    this.beams.geometry.setDrawRange(0, nb * 2);
+    (this.beams.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    (this.beams.material as THREE.LineBasicMaterial).color.setHex(this.colorBlind ? 0xffffff : 0xff7a3c);
 
     // drifters
     const seenD = new Set<string>();
@@ -517,7 +537,7 @@ export class View {
     }
 
     // wind leaves
-    const windOn = sim.windActive || sim.windWarning;
+    const windOn = (sim.windActive || sim.windWarning) && !this.reduceMotion;
     const dirRad = (sim.windDirDeg * Math.PI) / 180;
     this.leaves.forEach((leaf, n) => {
       (leaf.material as THREE.MeshBasicMaterial).opacity = windOn ? (sim.windActive ? 0.9 : 0.4) : 0;
@@ -550,6 +570,12 @@ export class View {
     (this.scene.fog as THREE.FogExp2).color.copy(sky);
     for (const c of this.clouds) c.position.x += Math.sin(t * 0.1 + c.position.z) * dt * 0.4;
 
+    if (this.orbit) {
+      const o = this.orbit;
+      this.camera.position.set(o.cx + Math.cos(o.angle) * o.radius, o.height, o.cz - Math.sin(o.angle) * o.radius); // seen from above, +X is right and +Z is down the screen, so counter-clockwise goes towards -Z
+      this.camera.lookAt(o.cx, 1, o.cz);
+      return;
+    }
     // third-person camera behind Mây
     const th = (camYawDeg * Math.PI) / 180;
     const fx = Math.sin(th);

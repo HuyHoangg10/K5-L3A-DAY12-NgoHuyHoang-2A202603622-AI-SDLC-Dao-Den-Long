@@ -10,7 +10,9 @@ import { runHarnessChecks } from "./harness-check.mjs";
 import { root, readManifest, runCli, runEntry } from "./lib.mjs";
 
 const argPhase = process.argv.indexOf("--phase");
-const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-2"; // "phase-2", "phase-3" or "extras"
+const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-3"; // "phase-2" (frozen, tagged), "phase-3" or "extras"
+const P3 = PHASE !== "phase-2"; // Ticket-03 rules (fuel, dawn win rule, new durations)
+const REF_PHASE = "phase-3"; // the extras must not change the headless output recorded here
 const outDir = path.join(root, "docs/evidence", PHASE);
 const rel = (p) => path.relative(root, p).split(path.sep).join("/");
 
@@ -139,8 +141,8 @@ const checks = {
   },
   lanterns() {
     return fails(
-      [eq(events("deposit_full").map((e) => [e.name, e.data]), [["night_start", { night: 1 }], ["deposit", { lantern_id: "L1", amount: 10, deposited: 10 }], ["lantern_lit", { lantern_id: "L1" }]]), "full deposit events wrong"],
-      [snapAt("deposit_full", 1).score === 200, "score after lighting a lantern is not 10x10 + 100"],
+      [eq(events("deposit_full").map((e) => [e.name, e.data]), [["night_start", { night: 1 }], ["deposit", { lantern_id: "L1", amount: 10, deposited: 10 }], ["lantern_lit", P3 ? { lantern_id: "L1", relight: false } : { lantern_id: "L1" }]]), "full deposit events wrong"],
+      [snapAt("deposit_full", 1).score === (P3 ? 150 : 200), P3 ? "score after lighting a lantern is not 10x5 + 100" : "score after lighting a lantern is not 10x10 + 100"],
       [eq(first("deposit_partial", "deposit").data, { lantern_id: "L1", amount: 6, deposited: 6 }), "partial deposit wrong"],
       [eq(first("deposit_topup", "deposit").data, { lantern_id: "L1", amount: 4, deposited: 10 }) && snapAt("deposit_topup", 1).player.carried === 3, "top-up deposit wrong"],
       [events("deposit_far", "deposit").length === 0, "interact worked at 2.1 m"],
@@ -223,7 +225,7 @@ const checks = {
     return fails(
       [snapAt("night2_bridge", 600).player.grounded && snapAt("night2_bridge", 700).player.pos[0] > 70 && events("night2_bridge", "player_hit").length === 0, "could not cross the bridge"],
       [t > 55 && t < 75, `fall beside the bridge at tick ${t}`],
-      [snapAt("random_night2", 0).lanterns.length === 6 && snapAt("random_night2", 0).night === 2 && snapAt("random_night2", 0).time_left_s === 330, "night 2: 6 lanterns, 330 s"],
+      [snapAt("random_night2", 0).lanterns.length === 6 && snapAt("random_night2", 0).night === 2 && snapAt("random_night2", 0).time_left_s === (P3 ? 270 : 330), "night 2: 6 lanterns, " + (P3 ? 270 : 330) + " s"],
     );
   },
   pads() {
@@ -249,7 +251,7 @@ const checks = {
   night3() {
     const cliff = Math.min(...snaps("night3_cliff").map((s) => Math.hypot(s.player.pos[0], s.player.pos[2])));
     return fails(
-      [snapAt("random_night3", 0).lanterns.length === 7 && snapAt("random_night3", 0).time_left_s === 360, "night 3: 7 lanterns, 360 s"],
+      [snapAt("random_night3", 0).lanterns.length === 7 && snapAt("random_night3", 0).time_left_s === (P3 ? 300 : 360), "night 3: 7 lanterns, " + (P3 ? 300 : 360) + " s"],
       [cliff > 7.9 && snaps("night3_cliff").at(-1).player.pos[1] === 0, `cliff: closest approach ${cliff.toFixed(2)} m`],
       [snapAt("night3_ramp", 60).player.pos[1] > 2 && snapAt("night3_ramp", 60).player.pos[1] < 3 && snapAt("night3_ramp", 120).player.pos[1] === 3 && snapAt("night3_ramp", 300).player.pos[1] === 0, "ramp / floor 1 / drop"],
     );
@@ -273,6 +275,68 @@ const checks = {
       [dp.drifters.find((d) => d.id === "D1").state === "flee" && dp.drifters.find((d) => d.id === "D1").stolen === 0, "pulse on a chasing drifter"],
     );
   },
+  // ---- Ticket-03 (phase 3) -----------------------------------------------------------------
+  fuel() {
+    const L = (n, t) => snapAt(n, t).lanterns.find((l) => l.id === "L1");
+    return fails(
+      [L("fuel_decay", 0).fuel === 100 && L("fuel_decay", 60).fuel === 99 && L("fuel_decay", 600).fuel === 90, "a lit lantern must lose 1 fuel per second"],
+      [eq(events("lantern_out", "lantern_out"), [{ type: "event", tick: 120, name: "lantern_out", data: { lantern_id: "L1" } }]), "lantern_out must come at tick 120 for 2 fuel"],
+      [L("lantern_out", 120).lit === false && L("lantern_out", 120).deposited === 0 && L("lantern_out", 120).ever_lit === true && L("lantern_out", 100).lit === true, "an empty lantern goes out, forgets its fireflies, remembers it was lit"],
+    );
+  },
+  refuel() {
+    return fails(
+      [eq(first("refuel", "refuel")?.data, { lantern_id: "L1", amount: 6, fuel: 100 }) && snapAt("refuel", 1).player.carried === 4, "45 fuel with 10 carried must use 6 fireflies (ceil(55/10)) and give 100"],
+      [snapAt("refuel", 1).score === 30, "a refuel gives +5 per firefly used"],
+      [eq(first("refuel_small", "refuel")?.data, { lantern_id: "L1", amount: 2, fuel: 100 }), "85 fuel needs 2 fireflies"],
+      [events("refuel_no_light", "refuel").length === 0 && endOf("refuel_no_light").score === 0, "with nothing carried nothing happens"],
+    );
+  },
+  relight() {
+    const L1 = snapAt("relight", 1).lanterns.find((l) => l.id === "L1");
+    const p = snapAt("relight_partial", 1).lanterns.find((l) => l.id === "L1");
+    return fails(
+      [eq(first("relight", "deposit")?.data, { lantern_id: "L1", amount: 5, deposited: 5 }) && eq(first("relight", "lantern_lit")?.data, { lantern_id: "L1", relight: true }), "a lantern lit before needs only 5 fireflies"],
+      [L1.lit && L1.fuel === 100 && L1.relit_count === 1 && snapAt("relight", 1).score === 5 * 5 + 40, "relight: fuel 100, relit_count 1, +5 each and +40"],
+      [p.lit === false && p.deposited === 3 && events("relight_partial", "lantern_lit").length === 0, "3 of 5 fireflies must not light it"],
+    );
+  },
+  drain() {
+    const ticks = events("drain", "fuel_drain").map((e) => e.tick);
+    return fails(
+      [snapAt("drain", 10).shades[0].state === "drain", "the wandering shade must stop and drain the weak lantern"],
+      [eq(ticks.slice(0, 4), [61, 121, 181, 241]), `fuel_drain ticks ${JSON.stringify(ticks.slice(0, 4))}`],
+      [eq(first("drain", "fuel_drain")?.data, { lantern_id: "L1", shade_id: "S1", fuel: 19 }), "after 60 ticks of draining: 25 - 6 = 19"],
+      [events("drain", "lantern_out").length === 1, "the drained lantern must go out"],
+      [events("drain_two_shades", "fuel_drain").filter((e) => e.tick === 61).length === 2, "two shades each report their drain"],
+      [snapAt("drain_chase", 0).shades[0].state === "drain" && snapAt("drain_chase", 1).shades[0].state === "chase", "Mây within 6 m: the draining shade turns to chase"],
+      [eq(first("drain_pulse", "pulse")?.data, { stunned_ids: ["S1"] }) && snapAt("drain_pulse", 1).score === 15, "a pulse on a draining shade gives +15"],
+    );
+  },
+  weak_safe() {
+    const d = (n) => Math.min(...snaps(n).map((s) => dxz(s.shades[0].pos, [0, 0, 25])));
+    return fails(
+      [d("weak_unsafe") < 5.5, "with fuel 29 the shade must be able to come inside 6 m"],
+      [d("strong_safe") >= 5.999, "with fuel 31 the shade must stay out of 6 m"],
+      [snapAt("refuel_pushout", 1).shades[0].state !== "drain" && events("refuel_pushout", "player_hit").length === 0 && dxz(snapAt("refuel_pushout", 31).shades[0].pos, [0, 0, 25]) >= 5.999, "refuelling to 30+ pushes the draining shade out without hurting"],
+      [dxz(snapAt("wander_to_weak", 60).shades[0].pos, [23.8, 0, 7.7]) < dxz(snapAt("wander_to_weak", 0).shades[0].pos, [23.8, 0, 7.7]) && snapAt("wander_to_weak", 120).shades[0].state === "drain", "a wandering shade must walk to the weak lit lantern and drain it"],
+    );
+  },
+  capacity() {
+    return fails(
+      [snapAt("capacity_growth", 0).player.capacity === 16 && snapAt("capacity_growth", 5).player.carried === 16, "10 + 2 x 3 lightings = 16 and pickup stops there"],
+      [snapAt("capacity_cap", 0).player.capacity === 20, "capacity never goes above 20"],
+      [snapAt("light_grows_capacity", 0).player.capacity === 10 && snapAt("light_grows_capacity", 2).player.capacity === 12, "lighting a lantern raises capacity by 2"],
+    );
+  },
+  dawn() {
+    return fails(
+      [eq(endOf("dawn_win"), { type: "end", ticks: 60, state: "won", score: 3 * (50 + 49) + 150 }) && eq(first("dawn_win", "game_over")?.data, { result: "won", reason: "dawn_survived" }), `dawn_win end ${JSON.stringify(endOf("dawn_win"))}`],
+      [eq(first("dawn_lose_threshold", "game_over")?.data, { result: "lost", reason: "dawn" }) && endOf("dawn_lose_threshold").score === 0, "2 of 5 lit is below ceil(0.6 x 5) = 3"],
+      [events("all_lit_no_early_win", "game_over").length === 0 && endOf("all_lit_no_early_win").state === "playing", "lighting every lantern must not end the night early"],
+      [eq(events("lose_dawn", "game_over")[0], { type: "event", tick: 120, name: "game_over", data: { result: "lost", reason: "dawn" } }), "dawn loss wrong"],
+    );
+  },
   determinism() {
     return detRows.filter((r) => !r.same).map((r) => `${r.name}: second run differs`);
   },
@@ -291,7 +355,8 @@ const checks = {
       for (const l of L) if (l.type !== "end") (l.tick < last ? f.push(`${name}: tick went backwards`) : (last = l.tick));
       const s0 = L[0];
       for (const k of ["night", "wind", "motes", "drifters", "charms"]) if (!(k in s0)) f.push(`${name}: snapshot lacks ${k}`);
-      for (const k of ["vel", "grounded", "invuln", "dash_cd_s", "pulse_cd_s", "charm_s"]) if (!(k in s0.player)) f.push(`${name}: player lacks ${k}`);
+      for (const k of ["vel", "grounded", "invuln", "dash_cd_s", "pulse_cd_s", "charm_s", ...(P3 ? ["capacity"] : [])]) if (!(k in s0.player)) f.push(`${name}: player lacks ${k}`);
+      if (P3) for (const k of ["fuel", "ever_lit", "relit_count"]) if (!(k in s0.lanterns[0])) f.push(`${name}: lantern lacks ${k}`);
     }
     return f.slice(0, 5);
   },
@@ -300,7 +365,7 @@ const checks = {
   },
   speed() {
     const f = [];
-    for (const [n, ticks] of [["full_night1", 18000], ["full_night2", 19800], ["full_night3", 21600]]) {
+    for (const [n, ticks] of (P3 ? [["full_night1", 14400], ["full_night2", 16200], ["full_night3", 18000]] : [["full_night1", 18000], ["full_night2", 19800], ["full_night3", 21600]])) {
       const o = out(n);
       if (endOf(n).ticks !== ticks) f.push(`${n}: ran ${endOf(n).ticks} ticks, expected ${ticks}`);
       if (o.ms > 30000) f.push(`${n}: ${o.ms} ms (limit 30000)`);
@@ -315,22 +380,22 @@ const checks = {
     const rows = testFiles.find((x) => x.file === "tests/io.test.ts")?.tests.filter((t) => t.name.startsWith("contract ")) ?? [];
     if (rows.length < 5 || rows.some((t) => t.status !== "passed")) f.push("contract tests missing or failing");
     const c = JSON.parse(readFileSync(path.join(root, "game.contract.json"), "utf8"));
-    if (c.contract_version !== "1.1" || c.team !== "2A202603622-NgoHuyHoang") f.push("contract header wrong");
+    if (c.contract_version !== (P3 ? "1.2" : "1.1") || c.team !== "2A202603622-NgoHuyHoang") f.push("contract header wrong");
     return f;
   },
   extras_off() {
-    // headless output with the extras in the repo must equal the files recorded in docs/evidence/phase-2
+    // headless output with the extras in the repo must equal the files recorded in docs/evidence/<REF_PHASE>
     const f = [];
     if (/CardKit|CubKit|WeaverKit|KitBase/.test(readFileSync(path.join(root, "dist/headless/cli.js"), "utf8"))) f.push("built CLI contains extras code");
     for (const [name, o] of outputs) {
       let ref;
       try {
-        ref = readFileSync(path.join(root, "docs/evidence/phase-2", `${name}.jsonl`), "utf8");
+        ref = readFileSync(path.join(root, "docs/evidence", REF_PHASE, `${name}.jsonl`), "utf8");
       } catch {
-        f.push(`${name}: no docs/evidence/phase-2 file to compare with`);
+        f.push(`${name}: no docs/evidence/${REF_PHASE} file to compare with`);
         continue;
       }
-      if (ref !== o.raw) f.push(`${name}: output differs from docs/evidence/phase-2`);
+      if (ref !== o.raw) f.push(`${name}: output differs from docs/evidence/${REF_PHASE}`);
     }
     return f.slice(0, 5);
   },

@@ -17,6 +17,8 @@ export interface SimOptions {
   seed: number;
   night?: Night;
   scenario?: Scenario;
+  /** Ticket-04 benchmark: no spawns, no damage, no pickups, no fuel decay, no end. Only the live benchmark mode sets it. */
+  bench?: boolean;
 }
 
 interface PlayerState {
@@ -75,6 +77,7 @@ export class Sim {
   private randomShades: boolean;
   private randomDrifters: boolean;
   private windEnabled: boolean;
+  private readonly bench: boolean;
   private input: FrameInput = { move: [0, 0], camYawDeg: 0, jump: false, interact: false, pulse: false, dash: false, pause: false };
   private prev = { jump: false, interact: false, pulse: false, dash: false, pause: false };
   private started = false;
@@ -91,6 +94,7 @@ export class Sim {
     this.rngDrop = new Rng((opts.seed ^ 0x85ebca6b) >>> 0);
     this.rngDrift = new Rng((opts.seed ^ 0xc2b2ae35) >>> 0);
     this.rngWind = new Rng((opts.seed ^ 0x27d4eb2f) >>> 0);
+    this.bench = opts.bench === true;
     this.randomMotes = sc.random_motes ?? true;
     this.randomShades = sc.random_shades ?? true;
     this.randomDrifters = sc.random_drifters ?? true;
@@ -307,9 +311,10 @@ export class Sim {
     }
     this.moveShades();
     this.moveDrifters();
-    if (!waiting) this.touches();
-    this.spawns();
+    if (!waiting && !this.bench) this.touches();
+    if (!this.bench) this.spawns();
 
+    if (this.bench) return true;
     if (this.player.flames <= 0) this.finish("lost", "no_flames");
     else if (this.timeLeft <= EPS) {
       // dawn: alive, and at least ceil(0.6 * lanterns) of them lit, is a win
@@ -352,6 +357,7 @@ export class Sim {
 
   /** Step 2 (Ticket-03): every lit lantern loses 1 fuel/s on its own and 5 fuel/s per draining shade; at 0 it goes off. */
   private updateFuel(): void {
+    if (this.bench) return;
     const U = C.fuel_units;
     const decay = (T.fuel_decay_per_s * U) / C.tick_rate;
     const drain = (T.drain_per_s * U) / C.tick_rate;
@@ -553,6 +559,7 @@ export class Sim {
   }
 
   private pickups(): void {
+    if (this.bench) return;
     const P = this.player;
     const keep: Mote[] = [];
     for (const m of this.motes) {

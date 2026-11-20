@@ -1,7 +1,7 @@
 {
-  "passed": 233,
+  "passed": 305,
   "failed": 0,
-  "total": 233,
+  "total": 305,
   "files": [
     {
       "file": "tests/champions.test.ts",
@@ -329,7 +329,7 @@
           "status": "passed"
         },
         {
-          "name": "contract has every key of contract v1.0 plus the v1.1 ones",
+          "name": "contract has every key of contracts v1.0 and v1.1 plus the v1.2 ones",
           "status": "passed"
         },
         {
@@ -341,7 +341,7 @@
           "status": "passed"
         },
         {
-          "name": "contract the standard numbers of Ticket-02 part 1",
+          "name": "contract the standard numbers of Ticket-02 and Ticket-03",
           "status": "passed"
         },
         {
@@ -485,7 +485,7 @@
           "status": "passed"
         },
         {
-          "name": "output format snapshot fields of contract v1.1",
+          "name": "output format snapshot fields of contract v1.2",
           "status": "passed"
         },
         {
@@ -526,6 +526,111 @@
         },
         {
           "name": "tick model yaw: move [0,1] with cam_yaw_deg 90 goes along +X",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/leaderboard.test.ts",
+      "tests": [
+        {
+          "name": "--export-leaderboard (run_cmd) exports the stored board in rank order",
+          "status": "passed"
+        },
+        {
+          "name": "--export-leaderboard (run_cmd) needs a file name",
+          "status": "passed"
+        },
+        {
+          "name": "--export-leaderboard (run_cmd) survives a damaged store file",
+          "status": "passed"
+        },
+        {
+          "name": "--export-leaderboard (run_cmd) writes {entries: []} when nothing was saved yet",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules a new entry with the same score as an old one goes below it",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules accepts the name A1_b2_c3_d4_",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules accepts the name abc",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules accepts the name Hoàng123",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules accepts the name Mây_Den",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules accepts the name xxxxxxxxxxxx",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules addEntry refuses a bad name",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules an entry that is too low for a full board is dropped",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules exportJson has exactly the shape {entries: [...]} in rank order",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules on equal scores the earlier entry stays on top",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules parseStore drops rows that do not follow the rules and accepts both shapes",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name ''",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name 'ab'",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name 'dash-name'",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name 'dot.name'",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name 'emoji🙂ok'",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name 'has space'",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules rejects the name 'xxxxxxxxxxxxx'",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules sorts by score descending and keeps only the top 10",
+          "status": "passed"
+        },
+        {
+          "name": "leaderboard rules time zones are respected when comparing times",
+          "status": "passed"
+        },
+        {
+          "name": "web game server (run_cmd without arguments) serves the build and keeps the board on disk across restarts",
           "status": "passed"
         }
       ]
@@ -672,6 +777,147 @@
       ]
     },
     {
+      "file": "tests/phase3.test.ts",
+      "tests": [
+        {
+          "name": "1. lantern fuel a lantern never lit still needs 10 and scores +100 (relight:false)",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel a lit lantern starts with 100 fuel and loses 1 per second (1/60 per tick)",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel a partly paid relight stays unlit and remembers the fireflies",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel fuel is exact over long runs: 14,399 ticks leave exactly 100 - 239.98 clamped at the out point (no drift)",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel lit:true without fuel means 100; a scenario can set fuel, and lit:false wins over fuel",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel out of fuel: the lantern goes off, deposited resets to 0, event lantern_out, ever_lit stays true",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel refuel is limited by what Mây carries",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel refuel: used = min(carried, ceil((100 - fuel)/10)), +10 fuel each, event refuel, +5 points per firefly",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel relight: a lantern that was lit before needs 5 fireflies, +5 each and +40; relight:true, relit_count 1, fuel 100",
+          "status": "passed"
+        },
+        {
+          "name": "1. lantern fuel with nothing carried the press does nothing: no event, no score",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel a draining shade can still touch Mây if she walks into it (no special protection)",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel a lantern refuelled to 30 or more: the shades stop draining and are pushed out of 6 m within 30 ticks without hurting",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel a pulse on a draining shade stuns it and scores +15 instead of +5",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel a wandering shade heads for the nearest weak lit lantern before any unlit one",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel a wandering shade walks to a weak (< 30) lit lantern, stops within 2 m and drains: state drain, 5 + 1 fuel per second",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel after the stun a shade goes to wander, not back to drain by itself",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel below 30 fuel the safe zone is gone: a chasing shade walks in; at 31 it stays out",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel exactly 30 fuel still has its safe zone, 29.98 does not",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel fuel_drain is written every 60 ticks of draining, per shade; two shades drain 11 per second together",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel Mây within 6 m: the draining shade turns to chase at once",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel only wandering shades pick a weak lantern: a shade that is chasing keeps chasing Mây",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel scenario target_lantern_id sends a wandering shade to that lantern",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel the lantern goes out when the drain takes the last fuel; the shades go back to wander",
+          "status": "passed"
+        },
+        {
+          "name": "2. shades drain fuel with no weak lantern it goes to the nearest unlit one as before",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity a refuel is not a lighting: capacity stays",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity capacity = 10 + 2 x successful lightings, at most 20",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity capacity starts again from 10 in every night (a new Sim)",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity dropping on a hit uses floor(carried / 2) of what is carried now (not of the capacity)",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity lanterns preset by the scenario do not count as successful lightings",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity lighting a lantern raises the capacity by 2 (10 -> 12); a relight counts too",
+          "status": "passed"
+        },
+        {
+          "name": "3. new win rule and 4. capacity pickup stops at the current capacity (16 with 3 lightings)",
+          "status": "passed"
+        },
+        {
+          "name": "5. score +5 per firefly put in (light, relight, refuel), +100 first light, +40 relight",
+          "status": "passed"
+        },
+        {
+          "name": "5. score a lost night scores no dawn bonus",
+          "status": "passed"
+        },
+        {
+          "name": "5. score dawn: +50 + floor(fuel) per lit lantern and +50 per flame left; nothing for the time",
+          "status": "passed"
+        }
+      ]
+    },
+    {
       "file": "tests/review2.test.ts",
       "tests": [
         {
@@ -776,7 +1022,7 @@
           "status": "passed"
         },
         {
-          "name": "motes and lanterns a lit lantern takes nothing more; the nearest unlit one is chosen, ties go to the smaller id",
+          "name": "motes and lanterns a lit lantern is skipped when a nearer unlit one exists",
           "status": "passed"
         },
         {
@@ -797,6 +1043,10 @@
         },
         {
           "name": "motes and lanterns pickup needs XZ <= 1.0 m and a height difference <= 1.5 m",
+          "status": "passed"
+        },
+        {
+          "name": "motes and lanterns the nearest lantern that can take fireflies is chosen (unlit, or lit but not full); ties go to the smaller id",
           "status": "passed"
         },
         {
@@ -832,7 +1082,7 @@
           "status": "passed"
         },
         {
-          "name": "night chain durations 300 / 330 / 360 s and lantern counts 5 / 6 / 7",
+          "name": "night chain durations 240 / 270 / 300 s and lantern counts 5 / 6 / 7",
           "status": "passed"
         },
         {
@@ -900,27 +1150,80 @@
           "status": "passed"
         },
         {
-          "name": "win, lose, score all lanterns pre-lit by the scenario wins on the first tick without scoring for them",
+          "name": "win, lose, score (Ticket-03 rules) dawn with at least ceil(0.6 x lanterns) lit is a win (reason dawn_survived); the score is 50 + floor(fuel) per lit lantern + 50 per flame",
           "status": "passed"
         },
         {
-          "name": "win, lose, score lighting the last lantern wins at the end of that tick; score = 10/firefly + 100/lantern + 2*floor(seconds left) + 50*flames",
+          "name": "win, lose, score (Ticket-03 rules) dawn with fewer lit lanterns than the threshold is a loss (reason dawn)",
           "status": "passed"
         },
         {
-          "name": "win, lose, score no flames beats a win or a dawn on the same tick",
+          "name": "win, lose, score (Ticket-03 rules) lighting every lantern does NOT end the night early",
           "status": "passed"
         },
         {
-          "name": "win, lose, score starts with 3 flames; night 1 lasts 300 s",
+          "name": "win, lose, score (Ticket-03 rules) night 1 has 5 lanterns and needs 3 lit at dawn",
           "status": "passed"
         },
         {
-          "name": "win, lose, score time out with unlit lanterns loses with reason dawn at tick 120",
+          "name": "win, lose, score (Ticket-03 rules) night 2 has 6 lanterns and needs 4 lit at dawn",
           "status": "passed"
         },
         {
-          "name": "win, lose, score winning on the very tick the time runs out is still a win",
+          "name": "win, lose, score (Ticket-03 rules) night 3 has 7 lanterns and needs 5 lit at dawn",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score (Ticket-03 rules) no flames loses first, also on the dawn tick, even with enough lit lanterns",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score (Ticket-03 rules) no time bonus any more: winning with lots of time left scores the same",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score (Ticket-03 rules) starts with 3 flames; night 1 lasts 240 s",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score (Ticket-03 rules) the last flame lost ends the night at once",
+          "status": "passed"
+        },
+        {
+          "name": "win, lose, score (Ticket-03 rules) time out with unlit lanterns loses with reason dawn at tick 120",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/settings.test.ts",
+      "tests": [
+        {
+          "name": "settings a saved duplicate key is not accepted: the bindings go back to the defaults",
+          "status": "passed"
+        },
+        {
+          "name": "settings conflictFor names the action that already owns the key",
+          "status": "passed"
+        },
+        {
+          "name": "settings defaults: arrows move, Space jumps, Shift dashes, E interacts, Q glows, P pauses; no two actions share a key",
+          "status": "passed"
+        },
+        {
+          "name": "settings garbage or missing data gives the defaults",
+          "status": "passed"
+        },
+        {
+          "name": "settings key labels are readable",
+          "status": "passed"
+        },
+        {
+          "name": "settings saved bindings are kept (lower-cased) when they are valid",
+          "status": "passed"
+        },
+        {
+          "name": "settings volume and sensitivity are clamped; flags are booleans",
           "status": "passed"
         }
       ]

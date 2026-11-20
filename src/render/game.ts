@@ -4,11 +4,14 @@ import { KitHud, KitView } from "../extras/kit-view";
 import { ChampionSelect } from "../extras/select";
 import type { Night } from "../sim/maps";
 import { Sim } from "../sim/sim";
-import { DT, TUNING as T } from "../sim/tuning";
+import { validName } from "../leaderboard/board";
+import { CONSTANTS as C, DT, TUNING as T } from "../sim/tuning";
 import type { SimEvent } from "../sim/types";
 import { Audio } from "./audio";
+import { Cues, arrowFor, directionWord } from "./cues";
 import { Hud } from "./hud";
 import { InputState } from "./input";
+import { loadBoard, rememberedName, saveEntry, storedIn } from "./leaderboard-ui";
 import { loadSettings, saveSettings, type Settings } from "./settings";
 import { steer } from "./steer";
 import { View } from "./view";
@@ -42,6 +45,11 @@ export class Game {
   private aim: [number, number] | null = null;
   private lastSecond = -1;
   private settingsFrom: "start" | "pause" = "start";
+  private cues = new Cues();
+  private runSeed = 0;
+  private saved = false;
+  private lowSeen = new Set<string>();
+  private windSeen = false;
 
   constructor(host: HTMLElement) {
     this.view = new View(host);
@@ -81,7 +89,10 @@ export class Game {
     this.hud.on("pause-settings", () => this.openSettings("pause"));
     this.hud.on("pause-menu", () => this.toMenu());
     this.hud.on("set-close", () => this.closeSettings());
-    this.hud.settingsUI(this.settings, (s) => {
+    this.hud.on("start-board", () => void this.openBoard());
+    this.hud.on("board-close", () => this.hud.show("board", false));
+    this.hud.on("name-save", () => void this.saveScore());
+    this.hud.settingsUI(this.settings, this.input, (s) => {
       this.settings = s;
       saveSettings(s);
       this.applySettings();
@@ -91,8 +102,13 @@ export class Game {
   private applySettings(): void {
     this.audio.applyVolume();
     this.input.sensitivity = this.settings.sensitivity;
+    this.input.bindings = { ...this.settings.bindings };
     this.view.colorBlind = this.settings.colorBlind;
+    this.view.reduceMotion = this.settings.reduceMotion;
+    this.cues.enabled = this.settings.subtitles;
     document.body.classList.toggle("cb", this.settings.colorBlind);
+    document.body.classList.toggle("rm", this.settings.reduceMotion);
+    document.body.classList.toggle("big", this.settings.largeText);
   }
 
   // ---- flow -----------------------------------------------------------------------------------------
@@ -107,10 +123,19 @@ export class Game {
     this.moveTarget = null;
     this.acc = 0;
     this.lastSecond = -1;
+    this.lowSeen.clear();
+    this.windSeen = false;
+    this.saved = false;
+    this.runSeed = seed;
+    this.cues.clear();
   }
 
   private enter(): void {
-    if (this.hud.isShown("settings")) return;
+    if (this.hud.isShown("settings") || this.hud.isShown("board")) return;
+    if (this.mode === "result" && this.hud.nameFocused()) {
+      void this.saveScore(); // Enter inside the name box saves the score
+      return;
+    }
     if (this.mode === "menu") {
       this.audio.resume();
       this.night = 1;
@@ -137,6 +162,7 @@ export class Game {
 
   private escape(): void {
     if (this.hud.isShown("settings")) return this.closeSettings();
+    if (this.hud.isShown("board")) return this.hud.show("board", false);
     if (this.mode === "playing") this.input.requestPause();
     else if (this.mode === "result" || this.mode === "intro") this.toMenu();
   }
@@ -176,6 +202,30 @@ export class Game {
     this.newSim();
   }
 
+  private async openBoard(): Promise<void> {
+    const rows = await loadBoard();
+    this.hud.showBoard(rows, `Top 10, saved in ${storedIn}.`);
+  }
+
+  /** The name form: 3-12 letters, digits or underscore. The entry is the whole run: total score and nights won. */
+  private async saveScore(): Promise<void> {
+    if (this.saved) return;
+    const name = this.hud.nameValue();
+    if (!validName(name)) {
+      this.hud.nameMessage("Name must be 3-12 letters, digits or underscore.");
+      return;
+    }
+    const won = this.sim.status === "won";
+    try {
+      const list = await saveEntry({ name, score: this.total + this.sim.score, nights_won: won ? this.night : this.night - 1, achieved_at: new Date().toISOString(), seed: this.runSeed });
+      const rank = list.findIndex((e) => e.name === name) + 1;
+      this.saved = true;
+      this.hud.nameMessage(rank > 0 ? `Saved! You are number ${rank} of ${list.length}.` : "Saved, but the top 10 is full of higher scores.", true);
+    } catch (e) {
+      this.hud.nameMessage((e as Error).message);
+    }
+  }
+
   private openSettings(from: "start" | "pause"): void {
     this.settingsFrom = from;
     this.hud.show("settings", true);
@@ -195,17 +245,33 @@ export class Game {
       case "deposit": {
         const lan = l(e.data.lantern_id);
         this.audio.play("deposit");
-        this.hud.toast(`${e.data.deposited} / ${T.lantern_cost} fireflies in the lantern`);
+        this.hud.toast(`${e.data.deposited} / ${lan?.everLit ? T.relight_cost : T.lantern_cost} fireflies in the lantern`);
         if (lan) this.view.burst(lan.pos[0], lan.pos[2], 0xffc060, 3, 0.5, lan.pos[1]);
         break;
       }
       case "lantern_lit": {
         const lan = l(e.data.lantern_id);
         this.audio.play("lit");
-        this.hud.toast(`Lantern lit! ${this.sim.litCount} / ${this.sim.lanterns.length}`, 2200);
+        this.hud.toast(`${e.data.relight ? "Lantern lit again" : "Lantern lit"}! ${this.sim.litCount} / ${this.sim.lanterns.length}. Space for ${this.sim.capacity} fireflies now`, 2400);
+        this.cues.say(`(chime) ${String(e.data.lantern_id)} is lit`);
         if (lan) this.view.burst(lan.pos[0], lan.pos[2], 0xffa040, T.safe_radius, 1.2, lan.pos[1]);
         break;
       }
+      case "refuel": {
+        const lan = l(e.data.lantern_id);
+        this.audio.play("deposit");
+        this.hud.toast(`Lantern fed: ${e.data.fuel} / ${T.fuel_max} fuel`);
+        if (lan) this.view.burst(lan.pos[0], lan.pos[2], 0xffc060, 3, 0.5, lan.pos[1]);
+        break;
+      }
+      case "lantern_out":
+        this.audio.play("lose");
+        this.hud.toast(`${String(e.data.lantern_id)} went out! It needs ${T.relight_cost} fireflies to light again`, 2600);
+        this.cues.say(`(sad tone) ${String(e.data.lantern_id)} went out`, 3500);
+        break;
+      case "fuel_drain":
+        this.cues.say(`(hum) A shade is draining ${String(e.data.lantern_id)}`, 2200, 4000);
+        break;
       case "pulse":
         this.audio.play("pulse");
         this.view.burst(P.pos[0], P.pos[2], 0xffd27a, T.pulse_radius, 0.55, P.pos[1]);
@@ -217,17 +283,25 @@ export class Game {
       case "player_hit":
         this.hud.hitFlash();
         this.audio.play(e.data.by === "fall" ? "fall" : "hit");
+        this.cues.say(e.data.by === "fall" ? "(whoosh) You fell" : "(thud) Hit by a shade", 2500);
         this.hud.toast(e.data.by === "fall" ? `You fell into the clouds! ${e.data.lost} fireflies lost` : e.data.dropped ? `An Ink Shade got you! You dropped ${e.data.dropped} fireflies` : "An Ink Shade got you!");
         break;
-      case "shade_spawned":
+      case "shade_spawned": {
         this.audio.play("spawn");
+        const sh = this.sim.shades.find((x) => x.id === e.data.id);
+        if (sh) {
+          const w = directionWord(P.pos[0], P.pos[2], sh.pos[0], sh.pos[2], this.input.camYawDeg);
+          this.cues.say(`(low growl) An Ink Shade appeared ${w} ${arrowFor(w)}`, 3200, 400);
+        }
         break;
+      }
       case "charm_picked":
         this.audio.play("charm");
         this.hud.toast("Wind charm! Faster for 10 s, dash without waiting", 2400);
         break;
       case "drifter_steal":
         this.audio.play("steal");
+        this.cues.say("(whoosh) A Drifter stole fireflies", 3000);
         this.hud.toast(`A Drifter stole ${e.data.amount} fireflies! Glow at it to get them back`, 2400);
         break;
       case "drifter_drop":
@@ -244,6 +318,7 @@ export class Game {
         const won = e.data.result === "won";
         this.audio.play(won ? "win" : "lose");
         this.hud.showResult(this.sim, String(e.data.reason), this.night, this.total);
+        this.hud.showNameForm(!won || this.night === 3, rememberedName()); // the run is over: offer the leaderboard
         break;
       }
     }
@@ -292,7 +367,20 @@ export class Game {
       }
       if (steps === 6) this.acc = 0; // tab was hidden; do not try to catch up
       const secs = Math.ceil(this.sim.timeLeft);
-      if (secs <= 10 && secs !== this.lastSecond && !this.sim.paused) this.audio.play("tick");
+      if (secs <= 10 && secs !== this.lastSecond && !this.sim.paused) {
+        this.audio.play("tick");
+        if (secs === 10) this.cues.say("(ticking) 10 seconds to dawn", 3000);
+      }
+      for (const l of this.sim.lanterns) {
+        const weak = l.lit && l.fuel60 < T.low_fuel_threshold * C.fuel_units;
+        if (weak && !this.lowSeen.has(l.id)) {
+          this.lowSeen.add(l.id);
+          this.audio.play("tick");
+          this.cues.say(`(beep) ${l.id} is running low`, 3000);
+        } else if (!weak) this.lowSeen.delete(l.id);
+      }
+      if (this.sim.windWarning && !this.windSeen) this.cues.say("(rising wind) Wind is coming", 3000);
+      this.windSeen = this.sim.windWarning || this.sim.windActive;
       this.lastSecond = secs;
       this.audio.setFast(this.sim.timeLeft <= 30);
     }
@@ -300,7 +388,7 @@ export class Game {
     this.view.update(this.sim, dt, this.input.camYawDeg);
     this.kitView.update(this.kit, this.sim, this.time);
     this.kitHud.update(this.kit);
-    if (this.mode === "playing" || this.mode === "result") this.hud.update(this.sim, this.night, this.total, this.input.defaultMode, (x, y, z) => this.view.project(x, y, z));
+    if (this.mode === "playing" || this.mode === "result") this.hud.update(this.sim, this.night, this.total, this.input.defaultMode, (x, y, z) => this.view.project(x, y, z), this.settings.bindings);
     this.view.render();
     requestAnimationFrame((t) => this.frame(t));
   }
