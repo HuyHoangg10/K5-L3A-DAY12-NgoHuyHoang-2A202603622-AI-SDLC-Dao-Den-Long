@@ -44,5 +44,5 @@ export function eventLine(e: { tick: number; name: string; data: Record<string, 
 }
 
 export function endLine(sim: Sim): string {
-  return JSON.stringify({ type: "end", ticks: sim.tick, state: sim.state, score: sim.score });
+  return JSON.stringify({ type: "end", ticks: sim.tick, state: sim.state === "paused" ? "playing" : sim.state, score: sim.score });
 }

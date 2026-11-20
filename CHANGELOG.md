@@ -10,7 +10,7 @@ Breaking changes (things that behave differently from the previous tag) are mark
 - **BREAKING** The island edge is no longer a wall: falling below Y = -10 costs a flame and all fireflies (`fall_enabled: true`).
 - **BREAKING** Pulse hits by 3D distance from feet + 0.8 m and acts on the shades' positions of the tick, not of the previous snapshot; stun is 120 ticks, push 15 ticks.
 - **BREAKING** Shade states are `spawning`, `wander`, `chase`, `recoil`, `stunned` (was `chase`, `stunned`); shades wander to the nearest unlit lantern until Mây is within 12 m.
-- **BREAKING** Win/lose is decided at the end of every tick (no early exit right after the deposit); `player_hit` has a `lost` field.
+- **BREAKING** Win/lose is decided at the end of every tick (no early exit right after the deposit); `player_hit` from a fall has a `lost` field (a shade hit has none).
 - New: nights 2 and 3 (`--night 2|3`), dash, pause, bounce pads, Gió Lạc drifters, Bùa Gió charms, strong wind, chain of nights, menus, settings, sound, full HUD, standard palette.
 - Tests: the Phase 1 test files (`rules`, `edges`, `drop`, `io`) and their scenarios were **replaced**, not skipped, because every number they asserted changed. They stay in git history at tag `phase-1`. The new files `tests/rules.test.ts`, `tests/maps.test.ts`, `tests/io.test.ts` assert the standard numbers.
 - Controls: arrow keys and right mouse button move; Shift dashes; the default character glows with Q and lights lanterns with E.
