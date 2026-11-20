@@ -1,6 +1,6 @@
 # Lantern Island (Đảo Đèn Lồng)
 
-**Demo video:** _coming in Phase 4 (link goes here)_
+**Demo video:** [lantern-island-demo.mp4](https://github.com/HuyHoangg10/K5-L3A-DAY12-NgoHuyHoang-2A202603622-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/lantern-island-demo.mp4) (3 min 35 s; the same file is in the repo as `docs/demo/demo.mp4`). It was recorded by an automated script (`scripts/demo/`) from a real run: a bot presses real keys in the real game, and the command outputs are the real outputs of commands run for the recording.
 
 A small 3D night game in three nights. Dark mist has swallowed the lights of an island chain. You play **Mây**, a girl in a conical hat with a little lantern on a stick. Pick up fireflies, carry them to the big lanterns, light them and keep them fed until dawn: lanterns burn down, and shades drain the weak ones. Ink Shades (purple-black blobs) chase you; a touch costs a flame and makes you drop fireflies. Glow to push them away. Night 2 adds grey Drifters that steal fireflies, night 3 adds a gusting wind. The island gets brighter with every lantern you light.
 
