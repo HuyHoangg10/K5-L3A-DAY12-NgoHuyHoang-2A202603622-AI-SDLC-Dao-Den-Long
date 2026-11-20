@@ -4,7 +4,7 @@ The video in `docs/demo/demo.mp4` (and the Release asset `lantern-island-demo.mp
 
 1. `capture-commands.mjs <out.json>` runs the real commands shown in parts 2 and 3 (`npm run check`, `npm run evidence`, two headless runs with the same seed and a byte comparison, the soak test, the committed `bench.json`, `git log`, `git tag`, the harness files) and stores their real output, exit code and duration.
 2. `record.mjs <commands.json> <out dir>` records 1280x720 WebM files with Playwright and the installed Chrome:
-   - part 1: the real game from `npm run dev`, played through real key presses by a small bot that only reads positions from the game (it never writes game state). The bot is simple, so it can lose; the video shows what happened.
+   - part 1: the real game from `npm run dev`, played as the champion Mây the Card Reader through real key presses by a small bot that only reads positions from the game while playing. The bot is simple, so it can lose; the video shows what happened. To reach Night 2, Night 3 and the dawn quickly the script uses **dev shortcuts** (jump to a night, shorten it, start some lanterns lit with chosen fuel) through `window.__game` of the dev build. Each one is announced on screen by a red `DEV SHORTCUT` subtitle, they do not exist in the real menu, and the result is never forced.
    - parts 2 and 3: the captured command output on a plain HTML page, with short subtitles.
 3. The WebM files were joined and converted with ffmpeg: `-c:v libx264 -crf 28 -preset veryfast -pix_fmt yuv420p -movflags +faststart`.
 
