@@ -7,8 +7,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 export async function buildHeadless() {
   await build({
-    entryPoints: [path.join(root, "src/headless/cli.ts")],
-    outfile: path.join(root, "dist/headless/cli.js"),
+    entryPoints: { cli: path.join(root, "src/headless/cli.ts"), soak: path.join(root, "src/headless/soak.ts"), launcher: path.join(root, "src/headless/launcher.ts") },
+    outdir: path.join(root, "dist/headless"),
     bundle: true,
     platform: "node",
     format: "esm",
