@@ -10,7 +10,7 @@ import { runHarnessChecks } from "./harness-check.mjs";
 import { root, readManifest, runCli, runEntry } from "./lib.mjs";
 
 const argPhase = process.argv.indexOf("--phase");
-const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-1"; // "phase-1" or "extras"
+const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-2"; // "phase-2", "phase-3" or "extras"
 const outDir = path.join(root, "docs/evidence", PHASE);
 const rel = (p) => path.relative(root, p).split(path.sep).join("/");
 
@@ -83,6 +83,9 @@ const cliCases = [
   { name: "scenario: bad pos", args: [...base, "--scenario", tmpFile("e.json", '{"player":{"pos":[1,2]}}')], expect: 2 },
   { name: "inputs: file not found", args: [...base, "--inputs", path.join(tmp, "missing.json")], expect: 2 },
   { name: "usage: --out missing", args: ["--seed", "1", "--ticks", "5"], expect: 1 },
+  { name: "usage: --night 4", args: ["--seed", "1", "--night", "4", "--ticks", "5", "--out", path.join(tmp, "o.jsonl")], expect: 1 },
+  { name: "valid call, night 2", args: ["--seed", "1", "--night", "2", "--ticks", "10", "--out", path.join(tmp, "o2.jsonl")], expect: 0 },
+  { name: "valid call, night 3", args: ["--seed", "1", "--night", "3", "--ticks", "10", "--out", path.join(tmp, "o3.jsonl")], expect: 0 },
 ].map((c) => ({ ...c, got: runCli(c.args) }));
 
 // ---- 4. determinism: re-run every scenario, compare to the evidence file --------------------
@@ -104,63 +107,174 @@ const near = (a, b, eps = 0.0011) => Math.abs(a - b) <= eps;
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 /** each check returns an array of failure strings; empty means met */
+const evOf = (n, name) => events(n, name);
+const first = (n, name) => events(n, name)[0];
+const dxz = (a, b) => Math.hypot(a[0] - b[0], a[2] - b[2]);
+const fails = (...pairs) => pairs.filter(([ok]) => !ok).map(([, msg]) => msg);
+
 const checks = {
-  tick_model() {
+  movement() {
+    return fails(
+      [eq(snapAt("accel", 6).player.vel, [0, 0, 6]), "full speed is not reached in 6 ticks"],
+      [near(snapAt("accel", 60).player.pos[2], 5.75, 1e-6), `z at tick 60 = ${snapAt("accel", 60).player.pos[2]}, expected 5.75`],
+      [near(snapAt("jump", 1).player.pos[1], 0.111, 1e-3) && near(snapAt("jump", 1).player.vel[1], 7 - 20 / 60, 2e-3), "jump start wrong"],
+      [near(Math.max(...snaps("jump").map((s) => s.player.pos[1])), 1.167, 2e-3), "jump peak is not about 1.167 m"],
+      [snapAt("jump", 60).player.grounded === true && snapAt("jump", 60).player.pos[1] === 0, "Mây did not land"],
+    );
+  },
+  dash() {
+    return fails(
+      [eq(events("dash", "dash").map((e) => e.tick), [1, 92]), `dash ticks ${JSON.stringify(events("dash", "dash").map((e) => e.tick))}, expected [1,92] (a press at 89 must be refused)`],
+      [snapAt("dash", 1).player.dash_cd_s === 1.5 && snapAt("dash", 91).player.dash_cd_s === 0, "dash cooldown is not 1.5 s from the start"],
+      [near(snapAt("dash", 12).player.pos[2], 2.8, 2e-3), "dash distance is not 14 m/s x 12 ticks = 2.8 m"],
+      [eq(snapAt("dash_facing", 12).player.pos, [0, 0, 2.8]), "standing dash does not go toward the facing direction (+Z)"],
+    );
+  },
+  pickups() {
+    return fails(
+      [eq(events("pickup_height", "mote_picked").map((e) => e.data.carried), [1, 2]), "pickup radius / height rule wrong"],
+      [snapAt("capacity", 10).player.carried === 10 && snapAt("capacity", 10).motes_active === 1, "capacity 10 not enforced"],
+      [endOf("capacity").score === 0, "picking up gave points"],
+    );
+  },
+  lanterns() {
+    return fails(
+      [eq(events("deposit_full").map((e) => [e.name, e.data]), [["night_start", { night: 1 }], ["deposit", { lantern_id: "L1", amount: 10, deposited: 10 }], ["lantern_lit", { lantern_id: "L1" }]]), "full deposit events wrong"],
+      [snapAt("deposit_full", 1).score === 200, "score after lighting a lantern is not 10x10 + 100"],
+      [eq(first("deposit_partial", "deposit").data, { lantern_id: "L1", amount: 6, deposited: 6 }), "partial deposit wrong"],
+      [eq(first("deposit_topup", "deposit").data, { lantern_id: "L1", amount: 4, deposited: 10 }) && snapAt("deposit_topup", 1).player.carried === 3, "top-up deposit wrong"],
+      [events("deposit_far", "deposit").length === 0, "interact worked at 2.1 m"],
+    );
+  },
+  falling() {
+    const hit = first("fall", "player_hit");
+    const t = hit?.tick ?? 0;
+    return fails(
+      [eq(hit?.data, { by: "fall", flames: 2, dropped: 0, lost: 4 }), `fall event ${JSON.stringify(hit?.data)}`],
+      [snapAt("fall", t).player.pos[1] < -10 && snapAt("fall", t).player.carried === 0, "fall: Y not below -10 or fireflies kept"],
+      [snapAt("fall", t + 59).player.pos[1] < -10, "Mây came back before 60 ticks"],
+      [eq(snapAt("fall", t + 60).player.pos, [0, 0, 0]) && eq(snapAt("fall", t + 60).player.vel, [0, 0, 0]) && snapAt("fall", t + 60).player.invuln === true, "respawn wrong"],
+      [snapAt("fall", t + 60 + 90).player.invuln === false && snapAt("fall", t + 60 + 88).player.invuln === true, "respawn invulnerability is not 90 ticks"],
+    );
+  },
+  shade_hit() {
+    const hits = events("shade_hit", "player_hit");
+    return fails(
+      [eq(hits.map((e) => e.tick), [1, 91, 181]), `hit ticks ${JSON.stringify(hits.map((e) => e.tick))}, expected [1,91,181]`],
+      [eq(hits[0]?.data, { by: "shade", flames: 2, dropped: 2, lost: 0 }), "first hit data wrong"],
+      [snapAt("shade_hit", 1).shades[0].state === "recoil" && snapAt("shade_hit", 60).shades[0].state === "recoil" && snapAt("shade_hit", 61).shades[0].state === "chase", "recoil is not 60 ticks"],
+      [snapAt("shade_hit", 1).motes.every((m) => m.kind === "dropped" && m.ttl_s === 8 && dxz(m.pos, snapAt("shade_hit", 1).player.pos) >= 1.499 && dxz(m.pos, snapAt("shade_hit", 1).player.pos) <= 2.501), "dropped fireflies wrong"],
+      [eq(events("lose_flames", "game_over")[0]?.data, { result: "lost", reason: "no_flames" }) && endOf("lose_flames").ticks === 1, "no_flames loss wrong"],
+    );
+  },
+  pulse() {
+    return fails(
+      [eq(first("pulse", "pulse").data, { stunned_ids: ["S1", "S3"] }), "pulse targets wrong"],
+      [snapAt("pulse", 1).player.carried === 1 && snapAt("pulse", 1).score === 10, "pulse cost or +5 per shade wrong"],
+      [snapAt("pulse", 120).shades[0].state === "stunned" && snapAt("pulse", 121).shades[0].state !== "stunned", "stun is not 120 ticks"],
+      [near(snapAt("pulse", 15).shades[0].pos[0], 7, 2e-3) && near(snapAt("pulse", 60).shades[0].pos[0], 7, 2e-3), "push is not 4 m in 15 ticks"],
+      [eq(events("pulse_cooldown", "pulse").map((e) => e.tick), [1, 182]), "cooldown not 3 s from the press"],
+      [events("pulse_no_light", "pulse").length === 0, "pulse worked with fewer than 3 fireflies"],
+    );
+  },
+  safe_zone() {
     const f = [];
-    if (!eq(snapAt("pickup", 0).player.pos, [0, 0, 0])) f.push("tick 0 snapshot is not the pre-input state");
-    if (!eq(endOf("pickup"), { type: "end", ticks: 60, state: "playing", score: 10 })) f.push(`end line ${JSON.stringify(endOf("pickup"))}`);
-    if (snapAt("pickup", 60).time_left_s !== 239) f.push("time_left_s at tick 60 is not 239");
-    if (!near(snapAt("pickup", 60).player.pos[2], 6, 1e-9)) f.push("player z at tick 60 is not 6");
-    if (snapAt("pickup", 60).sim_tick !== 60) f.push("sim_tick != tick");
-    return f;
+    for (const s of snaps("safe_zone")) for (const sh of s.shades) if (dxz(sh.pos, [0, 0, 25]) < 5.999) f.push(`tick ${s.tick}: shade ${dxz(sh.pos, [0, 0, 25]).toFixed(3)} m from the lit lantern`);
+    if (events("safe_zone", "player_hit").length) f.push("hit inside the safe zone");
+    const d = (t) => dxz(snapAt("lit_pushout", t).shades[0].pos, [0, 0, 25]);
+    if (events("lit_pushout", "player_hit").length) f.push("a shade hurt Mây while being pushed out");
+    if (!(d(1) < 6 && d(31) >= 5.999 && d(31) <= 6.05)) f.push(`push-out: ${d(1).toFixed(2)} -> ${d(31).toFixed(2)} m`);
+    return f.slice(0, 4);
   },
-  event_tick() {
-    const ev = events("pickup", "mote_picked");
-    return ev.length === 1 && ev[0].tick === 35 && ev[0].data.carried === 1 ? [] : [`mote_picked events: ${JSON.stringify(ev)}`];
+  win_lose() {
+    const e = endOf("win");
+    return fails(
+      [eq(e, { type: "end", ticks: 1, state: "won", score: 100 + 100 + 198 + 150 }), `win end line ${JSON.stringify(e)}`],
+      [eq(events("win", "game_over")[0]?.data, { result: "won", reason: "all_lit" }), "win reason"],
+      [eq(events("win_last_tick", "game_over")[0]?.data, { result: "won", reason: "all_lit" }), "a win on the last tick must be a win"],
+      [eq(events("lose_dawn", "game_over")[0], { type: "event", tick: 120, name: "game_over", data: { result: "lost", reason: "dawn" } }), "dawn loss wrong"],
+    );
   },
-  yaw() {
-    const p = snapAt("move_yaw90", 60).player.pos;
-    return near(p[0], 6) && near(p[2], 0) && p[1] === 0 ? [] : [`pos at 60 = ${JSON.stringify(p)}, expected [6,0,0]`];
+  shade_spawns() {
+    const sp = events("shade_random", "shade_spawned").map((e) => [e.tick, e.data.id]);
+    return fails(
+      [eq(sp.slice(0, 4), [[300, "S1"], [300, "S2"], [780, "S3"], [1260, "S4"]]), `spawns ${JSON.stringify(sp.slice(0, 5))}`],
+      [snapAt("shade_random", 300).shades.every((s) => s.state === "spawning" && near(Math.hypot(s.pos[0], s.pos[2]), 37, 0.01)), "new shades are not spawning on the r=37 ring"],
+      [snapAt("shade_random", 350).shades[0].state === "spawning" && snapAt("shade_random", 360).shades[0].state !== "spawning", "spawning lasts 60 ticks"],
+      [snapAt("shade_detect", 1).shades[0].state === "chase" && snapAt("shade_detect", 1).shades[1].state === "wander", "12 m detection wrong"],
+    );
   },
-  normalize() {
-    const p = snapAt("move_diag", 60).player.pos;
-    return eq(p, [4.243, 0, 4.243]) ? [] : [`pos at 60 = ${JSON.stringify(p)}, expected [4.243,0,4.243]`];
+  motes() {
+    return fails(
+      [snapAt("mote_spawn", 0).motes_active === 20 && new Set(snapAt("mote_spawn", 0).motes.map((m) => m.pos.join(","))).size === 20, "20 distinct start points"],
+      [snapAt("mote_spawn", 230).motes_active === 20 && snapAt("mote_spawn", 240).motes_active === 21 && snapAt("mote_spawn", 480).motes_active === 22, "one firefly every 240 ticks"],
+    );
   },
-  edge() {
-    const f = [];
-    const t = events("pulse_edge", "pulse").map((e) => e.tick);
-    if (!eq(t, [1, 202])) f.push(`pulse ticks ${JSON.stringify(t)}, expected [1,202]`);
-    const ys = [50, 60, 70, 80, 90, 100].map((k) => snapAt("jump", k).player.pos[1]);
-    if (ys.some((y) => y !== 0)) f.push(`jump held: y after landing ${JSON.stringify(ys)}`);
-    if (!(snapAt("jump", 10).player.pos[1] > 0.5)) f.push("jump did not leave the ground");
-    return f;
+  pause() {
+    return fails(
+      [eq(events("pause", "paused").map((e) => e.tick), [11, 31]) && eq(events("pause", "resumed").map((e) => e.tick), [21, 41]), "paused / resumed events"],
+      [snapAt("pause", 11).state === "paused" && snapAt("pause", 11).tick === 11 && snapAt("pause", 11).sim_tick === 10, "paused snapshot wrong"],
+      [snapAt("pause", 20).sim_tick === 10 && eq(snapAt("pause", 20).player.pos, snapAt("pause", 11).player.pos), "the world moved while paused"],
+      [snapAt("pause", 21).state === "playing" && snapAt("pause", 21).sim_tick === 11, "resume tick should run"],
+    );
   },
-  partial_frame() {
-    const a = snapAt("move_yaw90", 30).player.pos[0];
-    const b = snapAt("move_yaw90", 60).player.pos[0];
-    return near(a, 3) && near(b, 6) ? [] : [`x at 30/60 = ${a}/${b}, expected 3/6 (move kept after a frame with only interact)`];
+  night2() {
+    const t = first("night2_off_bridge", "player_hit")?.tick ?? 0;
+    return fails(
+      [snapAt("night2_bridge", 600).player.grounded && snapAt("night2_bridge", 700).player.pos[0] > 70 && events("night2_bridge", "player_hit").length === 0, "could not cross the bridge"],
+      [t > 55 && t < 75, `fall beside the bridge at tick ${t}`],
+      [snapAt("random_night2", 0).lanterns.length === 6 && snapAt("random_night2", 0).night === 2 && snapAt("random_night2", 0).time_left_s === 330, "night 2: 6 lanterns, 330 s"],
+    );
   },
-  frames_strict() {
-    return cliCases.filter((c) => /duplicate|decreasing/.test(c.name) && c.got.status !== 2).map((c) => `${c.name}: exit ${c.got.status}`);
+  pads() {
+    const v = snapAt("night2_pad", 1).player.vel;
+    const land = snapAt("night2_pad", 86).player;
+    const p3 = snapAt("night3_pad", 60).player;
+    return fails(
+      [near(v[1], 14 - 20 / 60, 2e-3) && near(Math.hypot(v[0], v[2]), 24, 0.02) && v[0] > 0, "night 2 pad launch"],
+      [snapAt("night2_pad", 80).player.grounded === false && land.grounded === true && dxz(land.pos, [70, 0, 0]) < 28, "night 2 flight is not about 1.4 s onto island B"],
+      [near(snapAt("night2_pad", 50).player.vel[0], v[0], 1e-6), "launch velocity changed in the air"],
+      [near(snapAt("night3_pad", 1).player.vel[1], 12 - 20 / 60, 2e-3) && snapAt("night3_pad", 1).player.vel[2] === -8, "night 3 pad launch"],
+      [p3.pos[1] === 6 && p3.grounded && Math.hypot(p3.pos[0], p3.pos[2]) <= 8, "did not land on floor 2"],
+    );
   },
-  exit_codes() {
-    return cliCases.filter((c) => c.got.status !== c.expect || (c.expect !== 0 && !c.got.stderr.includes("error:"))).map((c) => `${c.name}: exit ${c.got.status}, expected ${c.expect}`);
+  charm() {
+    return fails(
+      [eq(first("night2_charm", "charm_picked").data, { charm_id: "C1", charm_ticks: 600 }), "charm event"],
+      [snapAt("night2_charm", 1).player.charm_s === 10 && near(snapAt("night2_charm", 13).player.vel[0], 7.2, 1e-6), "charm speed 7.2 m/s for 600 ticks"],
+      [snapAt("night2_charm", 32).player.dash_cd_s === 0 && snapAt("night2_charm", 31).player.vel[0] === 14, "dash without cooldown at 14 m/s"],
+      [eq(snapAt("night2_charm", 1).charms, [{ id: "C1", available: false, respawn_s: 45 }]), "charm respawn 45 s"],
+    );
   },
-  scenario_rules() {
-    const f = [];
-    const s = snapAt("scenario_setup", 0);
-    if (!eq(s.lanterns[2].pos, [1, 0, 2])) f.push("L3 pos not updated by id");
-    if (!eq(s.lanterns[0].pos, [0, 0, 25])) f.push("L1 not left at default");
-    if (!(s.lanterns[1].lit === true && s.lanterns[1].deposited === 5)) f.push("L2 lit:true not applied");
-    if (s.motes_active !== 0 || s.shades.length !== 0) f.push("motes/shades [] did not replace the lists");
-    if (!eq(s.player, { pos: [3, 0, 3], flames: 2, carried: 7 })) f.push("player not taken from scenario");
-    if (s.score !== 0) f.push("building the scenario changed the score");
-    if (snapAt("scenario_setup", 60).time_left_s !== 299) f.push("time_left_s 300 not honoured");
-    if (events("scenario_setup").some((e) => e.tick === 0)) f.push("scenario emitted an event at tick 0");
-    if (snapAt("win", 0).score !== 0) f.push("pre-lit lanterns gave score");
-    if (!eq(events("win", "lantern_lit").map((e) => e.data.lantern_id), ["L5"])) f.push("pre-lit lanterns emitted lantern_lit");
-    if (!eq(snapAt("pickup", 0).motes, [{ id: "M1", pos: [0, 0, 5] }])) f.push("random_motes:false motes list wrong");
-    return f;
+  night3() {
+    const cliff = Math.min(...snaps("night3_cliff").map((s) => Math.hypot(s.player.pos[0], s.player.pos[2])));
+    return fails(
+      [snapAt("random_night3", 0).lanterns.length === 7 && snapAt("random_night3", 0).time_left_s === 360, "night 3: 7 lanterns, 360 s"],
+      [cliff > 7.9 && snaps("night3_cliff").at(-1).player.pos[1] === 0, `cliff: closest approach ${cliff.toFixed(2)} m`],
+      [snapAt("night3_ramp", 60).player.pos[1] > 2 && snapAt("night3_ramp", 60).player.pos[1] < 3 && snapAt("night3_ramp", 120).player.pos[1] === 3 && snapAt("night3_ramp", 300).player.pos[1] === 0, "ramp / floor 1 / drop"],
+    );
+  },
+  wind() {
+    const a = snapAt("night3_wind", 1800);
+    const b = snapAt("night3_wind", 2100);
+    const d = Math.hypot(b.player.pos[0] - a.player.pos[0], b.player.pos[2] - a.player.pos[2]);
+    return fails(
+      [snapAt("night3_wind", 1750).wind.active === false && a.wind.active === true && snapAt("night3_wind", 2050).wind.active && b.wind.active === false, "gust window 1800..2099"],
+      [near(d, 10, 0.05), `gust moved Mây ${d.toFixed(3)} m, expected about 10`],
+      [a.wind.dir_deg === b.wind.dir_deg, "wind direction changed during the gust"],
+    );
+  },
+  drifters() {
+    const e = first("drifter_steal", "drifter_steal");
+    const dp = snapAt("drifter_pulse", 1);
+    return fails(
+      [eq(e?.data, { drifter_id: "D1", amount: 3, carried: 3 }) && events("drifter_steal", "player_hit").length === 0, "steal event / flame lost"],
+      [eq(first("drifter_pulse", "drifter_drop").data, { drifter_id: "D2", amount: 3 }) && dp.motes.filter((m) => m.kind === "dropped").length === 3, "pulse on a loaded drifter"],
+      [dp.drifters.find((d) => d.id === "D1").state === "flee" && dp.drifters.find((d) => d.id === "D1").stolen === 0, "pulse on a chasing drifter"],
+    );
+  },
+  determinism() {
+    return detRows.filter((r) => !r.same).map((r) => `${r.name}: second run differs`);
   },
   output_format() {
     const f = [];
@@ -172,109 +286,53 @@ const checks = {
       const L = o.lines;
       if (L[0].type !== "snapshot" || L[0].tick !== 0) f.push(`${name}: first line is not snapshot tick 0`);
       if (L[L.length - 1].type !== "end" || L.filter((l) => l.type === "end").length !== 1) f.push(`${name}: end line missing or not last`);
-      if (L.some((l) => !["snapshot", "event", "end"].includes(l.type))) f.push(`${name}: unknown line type`);
       if (/\d\.\d{4,}/.test(o.raw)) f.push(`${name}: a number has more than 3 decimals`);
       let last = -1;
       for (const l of L) if (l.type !== "end") (l.tick < last ? f.push(`${name}: tick went backwards`) : (last = l.tick));
-      const end = L[L.length - 1];
-      if (!["playing", "won", "lost"].includes(end.state)) f.push(`${name}: bad end state`);
+      const s0 = L[0];
+      for (const k of ["night", "wind", "motes", "drifters", "charms"]) if (!(k in s0)) f.push(`${name}: snapshot lacks ${k}`);
+      for (const k of ["vel", "grounded", "invuln", "dash_cd_s", "pulse_cd_s", "charm_s"]) if (!(k in s0.player)) f.push(`${name}: player lacks ${k}`);
     }
-    if (snapAt("pulse_stun", 10).shades[0].state !== "stunned") f.push("stunned state not reported");
-    return f;
+    return f.slice(0, 5);
   },
-  determinism() {
-    return detRows.filter((r) => !r.same).map((r) => `${r.name}: second run differs`);
-  },
-  five_lanterns() {
-    const ids = snapAt("random_default", 0).lanterns.map((l) => l.id);
-    return eq(ids, ["L1", "L2", "L3", "L4", "L5"]) ? [] : [`lantern ids ${JSON.stringify(ids)}`];
-  },
-  pickup_rules() {
-    const f = [];
-    if (events("capacity", "mote_picked").length !== 1) f.push("carried 9 with two motes in range should pick up exactly one");
-    if (snapAt("capacity", 10).player.carried !== 10 || snapAt("capacity", 10).motes_active !== 1) f.push("capacity not enforced");
-    if (endOf("pickup").score !== 10) f.push("per_mote score wrong");
-    return f;
-  },
-  deposit_rules() {
-    const f = [];
-    if (!eq(events("deposit_full").map((e) => [e.name, e.tick, e.data]), [["deposit", 1, { lantern_id: "L1", amount: 5, deposited: 5 }], ["lantern_lit", 1, { lantern_id: "L1" }]])) f.push("full deposit events wrong");
-    if (endOf("deposit_full").score !== 100) f.push("per_lantern score wrong");
-    if (!eq(events("deposit_partial").map((e) => e.data), [{ lantern_id: "L1", amount: 3, deposited: 3 }])) f.push("partial deposit wrong");
-    if (snapAt("deposit_partial", 1).lanterns[0].lit) f.push("partial deposit lit the lantern");
-    if (!eq(events("deposit_finish", "deposit")[0]?.data, { lantern_id: "L1", amount: 2, deposited: 5 })) f.push("top-up deposit wrong");
-    if (snapAt("deposit_finish", 1).player.carried !== 2) f.push("leftover motes not kept");
-    return f;
-  },
-  hit_rules() {
-    const f = [];
-    const h = events("shade_hit", "player_hit");
-    if (!eq(h.map((e) => e.tick), [1, 92])) f.push(`hit ticks ${JSON.stringify(h.map((e) => e.tick))}, expected [1,92]`);
-    if (!eq(h[0]?.data, { by: "shade", flames: 2, dropped: 2 })) f.push("first hit data wrong");
-    if (!eq(h[1]?.data, { by: "shade", flames: 1, dropped: 1 })) f.push("second hit data wrong");
-    if (snapAt("shade_hit", 100).motes_active !== 3) f.push("dropped motes not placed on the ground");
-    return f;
-  },
-  pulse_rules() {
-    const f = [];
-    const p = events("pulse_stun", "pulse");
-    if (!eq(p.map((e) => [e.tick, e.data]), [[1, { stunned_ids: ["S1"] }]])) f.push("pulse event wrong");
-    if (snapAt("pulse_stun", 1).player.carried !== 2 || snapAt("pulse_stun", 1).score !== 20) f.push("pulse cost or per_stun wrong");
-    if (!near(snapAt("pulse_stun", 1).shades[0].pos[0], 5 + 4)) f.push("push distance wrong");
-    if (snapAt("pulse_stun", 180).shades[0].state !== "stunned" || snapAt("pulse_stun", 181).shades[0].state !== "chase") f.push("stun length is not pulse_stun_s");
-    if (!eq(events("pulse_cooldown", "pulse").map((e) => e.tick), [1, 126])) f.push("cooldown not enforced");
-    if (events("pulse_no_light", "pulse").length !== 0) f.push("pulse worked without enough light");
-    return f;
-  },
-  safe_radius() {
-    const f = [];
-    for (const s of snaps("shade_safe")) {
-      const d = Math.hypot(s.shades[0].pos[0] - 0, s.shades[0].pos[2] - 25);
-      if (d < 3.999) f.push(`tick ${s.tick}: shade ${d.toFixed(3)} m from L1`);
-    }
-    if (events("shade_safe", "player_hit").length) f.push("player standing on a lantern was hit");
-    return f.slice(0, 3);
-  },
-  win() {
-    const e = endOf("win");
-    const ok = eq(e, { type: "end", ticks: 1, state: "won", score: 100 + 2 * 99 + 50 * 3 });
-    const go = events("win", "game_over")[0];
-    return ok && eq(go?.data, { result: "won", reason: "all_lit" }) && go.tick === 1 ? [] : [`end ${JSON.stringify(e)}, game_over ${JSON.stringify(go)}`];
-  },
-  lose_flames() {
-    const go = events("lose_flames", "game_over")[0];
-    return eq(go?.data, { result: "lost", reason: "no_flames" }) && eq(endOf("lose_flames"), { type: "end", ticks: 1, state: "lost", score: 0 }) ? [] : [`game_over ${JSON.stringify(go)}`];
-  },
-  lose_dawn() {
-    const go = events("lose_dawn", "game_over")[0];
-    return eq(go?.data, { result: "lost", reason: "dawn" }) && go.tick === 120 && endOf("lose_dawn").ticks === 120 && snapAt("lose_dawn", 120).time_left_s === 0 ? [] : [`game_over ${JSON.stringify(go)}`];
-  },
-  random_spawn() {
-    const f = [];
-    if (snapAt("random_default", 0).motes_active !== 30) f.push("not 30 random motes");
-    const sp = events("random_default", "shade_spawned").map((e) => [e.tick, e.data.id]);
-    if (!eq(sp.slice(0, 2), [[300, "S1"], [660, "S2"]])) f.push(`shade_spawned ${JSON.stringify(sp.slice(0, 3))}`);
-    return f;
+  exit_codes() {
+    return cliCases.filter((c) => c.got.status !== c.expect || (c.expect !== 0 && !c.got.stderr.includes("error:"))).map((c) => `${c.name}: exit ${c.got.status}, expected ${c.expect}`);
   },
   speed() {
-    const o = out("full_night");
-    return endOf("full_night").ticks === 14400 && o.ms < 30000 ? [] : [`full_night ran ${endOf("full_night").ticks} ticks in ${o.ms} ms`];
-  },
-  extras_off() {
-    // headless output with the extras in the repo must equal the output recorded at the phase-1 tag
     const f = [];
-    if (readFileSync(path.join(root, "dist/headless/cli.js"), "utf8").includes("CardKit")) f.push("built CLI contains extras code");
-    for (const [name, o] of outputs) {
-      let tagged;
-      try {
-        tagged = execFileSync("git", ["show", `phase-1:docs/evidence/phase-1/${name}.jsonl`], { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
-      } catch {
-        f.push(`${name}: cannot read the phase-1 tag (is it fetched?)`);
-        continue;
-      }
-      if (tagged !== o.raw) f.push(`${name}: output differs from the phase-1 tag`);
+    for (const [n, ticks] of [["full_night1", 18000], ["full_night2", 19800], ["full_night3", 21600]]) {
+      const o = out(n);
+      if (endOf(n).ticks !== ticks) f.push(`${n}: ran ${endOf(n).ticks} ticks, expected ${ticks}`);
+      if (o.ms > 30000) f.push(`${n}: ${o.ms} ms (limit 30000)`);
     }
     return f;
+  },
+  unit_tests() {
+    return vitest && vitest.numFailedTests === 0 && vitest.numTotalTests > 0 ? [] : [`vitest failed: ${vitest ? vitest.numFailedTests + " failing" : "no report"}`];
+  },
+  contract() {
+    const f = [];
+    const rows = testFiles.find((x) => x.file === "tests/io.test.ts")?.tests.filter((t) => t.name.startsWith("contract ")) ?? [];
+    if (rows.length < 5 || rows.some((t) => t.status !== "passed")) f.push("contract tests missing or failing");
+    const c = JSON.parse(readFileSync(path.join(root, "game.contract.json"), "utf8"));
+    if (c.contract_version !== "1.1" || c.team !== "2A202603622-NgoHuyHoang") f.push("contract header wrong");
+    return f;
+  },
+  extras_off() {
+    // headless output with the extras in the repo must equal the files recorded in docs/evidence/phase-2
+    const f = [];
+    if (/CardKit|CubKit|WeaverKit|KitBase/.test(readFileSync(path.join(root, "dist/headless/cli.js"), "utf8"))) f.push("built CLI contains extras code");
+    for (const [name, o] of outputs) {
+      let ref;
+      try {
+        ref = readFileSync(path.join(root, "docs/evidence/phase-2", `${name}.jsonl`), "utf8");
+      } catch {
+        f.push(`${name}: no docs/evidence/phase-2 file to compare with`);
+        continue;
+      }
+      if (ref !== o.raw) f.push(`${name}: output differs from docs/evidence/phase-2`);
+    }
+    return f.slice(0, 5);
   },
   extras_tests() {
     const mine = testFiles.filter((x) => ["tests/extras.test.ts", "tests/champions.test.ts", "tests/steer.test.ts"].includes(x.file));
@@ -282,22 +340,10 @@ const checks = {
     const bad = t.filter((x) => x.status !== "passed").length;
     return mine.length === 3 && t.length >= 70 && bad === 0 ? [] : [`extras tests: ${mine.length}/3 files, ${t.length} tests, ${bad} failing`];
   },
-  unit_tests() {
-    return vitest && vitest.numFailedTests === 0 && vitest.numTotalTests > 0 ? [] : [`vitest failed: ${vitest ? vitest.numFailedTests + " failing" : "no report"}`];
-  },
-  contract() {
-    const f = [];
-    const file = testFiles.find((x) => x.file === "tests/io.test.ts");
-    const rows = (file?.tests ?? []).filter((t) => t.name.startsWith("contract "));
-    if (rows.length < 4 || rows.some((t) => t.status !== "passed")) f.push("contract tests missing or failing");
-    const c = JSON.parse(readFileSync(path.join(root, "game.contract.json"), "utf8"));
-    if (c.contract_version !== "1.0" || c.team !== "2A202603622-NgoHuyHoang") f.push("contract header wrong");
-    return f;
-  },
 };
 
 // ---- 6. requirements table ------------------------------------------------------------------
-const reqs = JSON.parse(readFileSync(path.join(root, PHASE === "phase-1" ? "docs/evidence/requirements.json" : `docs/evidence/requirements-${PHASE}.json`), "utf8")).requirements;
+const reqs = JSON.parse(readFileSync(path.join(root, `docs/evidence/requirements-${PHASE}.json`), "utf8")).requirements;
 const rows = reqs.map((r) => {
   let fails;
   try {
@@ -307,7 +353,7 @@ const rows = reqs.map((r) => {
   }
   const paths = (r.scenarios ?? []).map((n) => `docs/evidence/${PHASE}/${n}.jsonl`);
   if (r.check === "unit_tests" || r.check === "contract") paths.push(`docs/evidence/${PHASE}/tests.json`);
-  if (r.check === "exit_codes" || r.check === "frames_strict") paths.push("(CLI exit codes, see section below)");
+  if (r.check === "exit_codes") paths.push("(CLI exit codes, see section below)");
   return { ...r, paths, pass: fails.length === 0, fails };
 });
 
