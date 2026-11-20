@@ -1,0 +1,447 @@
+{
+  "passed": 105,
+  "failed": 0,
+  "total": 105,
+  "files": [
+    {
+      "file": "tests/drop.test.ts",
+      "tests": [
+        {
+          "name": "hit_drop_ratio rounding carrying 0 still loses a flame",
+          "status": "passed"
+        },
+        {
+          "name": "hit_drop_ratio rounding carrying 1 drops 0",
+          "status": "passed"
+        },
+        {
+          "name": "hit_drop_ratio rounding odd carried rounds the drop down: 5 * 0.5 -> 2 dropped, 3 kept",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/edges.test.ts",
+      "tests": [
+        {
+          "name": "end-of-game priority lighting the last lantern in the very last tick is a win, not dawn",
+          "status": "passed"
+        },
+        {
+          "name": "end-of-game priority losing the last flame in the very last tick is no_flames, not dawn",
+          "status": "passed"
+        },
+        {
+          "name": "end-of-game priority the win bonus uses the time left after the final tick and the flames left",
+          "status": "passed"
+        },
+        {
+          "name": "movement details a jump pressed in mid-air does nothing extra",
+          "status": "passed"
+        },
+        {
+          "name": "movement details the island wall holds: after reaching the edge the player stays on the circle at every later tick",
+          "status": "passed"
+        },
+        {
+          "name": "movement details yaw 180 with move [0,1] goes to -Z",
+          "status": "passed"
+        },
+        {
+          "name": "movement details yaw 30 with move [0,1] goes to (sin30, cos30) * speed",
+          "status": "passed"
+        },
+        {
+          "name": "movement details yaw 90 with move [1,0] goes to -Z (x' = x cos, z' = -x sin)",
+          "status": "passed"
+        },
+        {
+          "name": "pulse details a shade pushed into the safe circle of a lantern is put back on its rim",
+          "status": "passed"
+        },
+        {
+          "name": "pulse details cooldown is exactly pulse_cooldown_s: a press 1 tick early is blocked, the exact tick works",
+          "status": "passed"
+        },
+        {
+          "name": "radius boundaries (distance <= r counts, measured on the XZ plane) a shade directly above the player (different Y, same XZ) still hits",
+          "status": "passed"
+        },
+        {
+          "name": "radius boundaries (distance <= r counts, measured on the XZ plane) every mote in range is taken in the same tick, up to capacity",
+          "status": "passed"
+        },
+        {
+          "name": "radius boundaries (distance <= r counts, measured on the XZ plane) pickup ignores height: a mote 3 m up but within radius on XZ is picked",
+          "status": "passed"
+        },
+        {
+          "name": "radius boundaries (distance <= r counts, measured on the XZ plane) pulse_radius: exactly at the radius is stunned, 1 cm outside is not (positions of the previous snapshot)",
+          "status": "passed"
+        },
+        {
+          "name": "radius boundaries (distance <= r counts, measured on the XZ plane) shade_hit_radius: exactly at the radius hits, a bit outside does not",
+          "status": "passed"
+        },
+        {
+          "name": "random generation never more than 6 shades, and 6 are reached",
+          "status": "passed"
+        },
+        {
+          "name": "random generation random motes stay out of every safe circle and away from the start",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/io.test.ts",
+      "tests": [
+        {
+          "name": "CLI (built dist/headless/cli.js) CLI output equals in-process output for the same scenario and inputs",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) does not create the output file on error",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) exits 0 and writes the file",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) malformed JSON in inputs: exit 2 and a message on stderr",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) malformed scenario: exit 2",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) missing inputs file: exit 2",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) non-increasing frame ticks in inputs: exit 2",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) stops early when the game ends and still exits 0",
+          "status": "passed"
+        },
+        {
+          "name": "CLI (built dist/headless/cli.js) usage errors (missing --out, unknown option, bad --ticks): exit 1, not 0 or 2, message on stderr",
+          "status": "passed"
+        },
+        {
+          "name": "contract has every key the lab contract lists",
+          "status": "passed"
+        },
+        {
+          "name": "contract header fields",
+          "status": "passed"
+        },
+        {
+          "name": "contract island is big enough for the default lantern ring and the example scenario in the lab",
+          "status": "passed"
+        },
+        {
+          "name": "contract the game really uses the declared numbers (lantern count, night length, flames, speed)",
+          "status": "passed"
+        },
+        {
+          "name": "contract tuning in game.contract.json is exactly src/sim/tuning.ts",
+          "status": "passed"
+        },
+        {
+          "name": "determinism a different seed gives a different island",
+          "status": "passed"
+        },
+        {
+          "name": "determinism auto-generated ids (shades, dropped motes) repeat across runs",
+          "status": "passed"
+        },
+        {
+          "name": "determinism PRNG: same seed same sequence, values in [0,1)",
+          "status": "passed"
+        },
+        {
+          "name": "determinism same seed + scenario + inputs: identical output, byte for byte",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation accepts frames that only carry some fields",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: button not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: decreasing tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: duplicate tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: fractional tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: frames missing",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: move not a pair",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: negative tick",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects inputs: not an object",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: array",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: lantern without id",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: motes not array",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: pos with 2 numbers",
+          "status": "passed"
+        },
+        {
+          "name": "input / scenario validation rejects scenario: random flag not boolean",
+          "status": "passed"
+        },
+        {
+          "name": "output format --snapshot-every controls the spacing",
+          "status": "passed"
+        },
+        {
+          "name": "output format has three line types, starts with snapshot tick 0, ends with exactly one end line",
+          "status": "passed"
+        },
+        {
+          "name": "output format numbers are rounded to at most 3 decimals",
+          "status": "passed"
+        },
+        {
+          "name": "output format snapshot has the contract fields",
+          "status": "passed"
+        },
+        {
+          "name": "output format snapshot tick and sim_tick agree in phase 1",
+          "status": "passed"
+        },
+        {
+          "name": "output format tick never goes backwards and events sit between the right snapshots",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/rules.test.ts",
+      "tests": [
+        {
+          "name": "end of game lanterns pre-lit by the scenario give no event and no score at setup",
+          "status": "passed"
+        },
+        {
+          "name": "end of game lighting the last lantern wins: game_over(won, all_lit), bonuses added, nothing after",
+          "status": "passed"
+        },
+        {
+          "name": "end of game no more lines after the game ended",
+          "status": "passed"
+        },
+        {
+          "name": "end of game running out of time loses with reason dawn",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns a deposit only takes what is missing and keeps the leftover motes",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns a partial deposit keeps the rest in the lantern and does not light it",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns depositing lantern_cost lights the lantern and scores per_lantern",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns interact exactly at interact_radius works",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns interact outside interact_radius deposits nothing",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns interact without any carried motes does nothing",
+          "status": "passed"
+        },
+        {
+          "name": "lanterns the island has exactly L1..L5, all unlit at the start",
+          "status": "passed"
+        },
+        {
+          "name": "motes a full player picks up nothing",
+          "status": "passed"
+        },
+        {
+          "name": "motes picking a mote adds per_mote to the score",
+          "status": "passed"
+        },
+        {
+          "name": "motes pickup stops at carry_capacity: with carried 9 and two motes in range only one is taken",
+          "status": "passed"
+        },
+        {
+          "name": "motes pickup uses distance <= pickup_radius (boundary counts) on the XZ plane",
+          "status": "passed"
+        },
+        {
+          "name": "movement a move shorter than 1 is not scaled up",
+          "status": "passed"
+        },
+        {
+          "name": "movement cam_yaw_deg 90 turns the forward key into +X; a frame without move keeps the old move",
+          "status": "passed"
+        },
+        {
+          "name": "movement jump fires on false->true only; holding the button does not jump again after landing",
+          "status": "passed"
+        },
+        {
+          "name": "movement move [1,1] is normalised to length 1 (not 1.414x faster)",
+          "status": "passed"
+        },
+        {
+          "name": "movement move [3,4] has length 5 and is normalised to (0.6, 0.8)",
+          "status": "passed"
+        },
+        {
+          "name": "movement the island edge is a wall because fall_enabled is false",
+          "status": "passed"
+        },
+        {
+          "name": "pulse a stunned shade cannot hit the player, even when the player walks into it",
+          "status": "passed"
+        },
+        {
+          "name": "pulse a stunned shade is reported as stunned and does not move for exactly pulse_stun_s",
+          "status": "passed"
+        },
+        {
+          "name": "pulse fires on false->true only: held button pulses once, a new press pulses again",
+          "status": "passed"
+        },
+        {
+          "name": "pulse is blocked during pulse_cooldown_s and costs nothing when blocked",
+          "status": "passed"
+        },
+        {
+          "name": "pulse needs pulse_cost motes: with fewer the pulse does nothing",
+          "status": "passed"
+        },
+        {
+          "name": "pulse pulse with no shade in range still pays and emits an empty stunned_ids",
+          "status": "passed"
+        },
+        {
+          "name": "pulse pushes the stunned shade exactly pulse_push_m away from where it was in the previous snapshot",
+          "status": "passed"
+        },
+        {
+          "name": "pulse stuns shades in pulse_radius, pays pulse_cost, scores per_stun, ignores far shades",
+          "status": "passed"
+        },
+        {
+          "name": "scenario an unknown lantern id is ignored: the island still has exactly 5 lanterns",
+          "status": "passed"
+        },
+        {
+          "name": "scenario lanterns update by id; untouched lanterns keep defaults; lit:true sets deposited to the cost",
+          "status": "passed"
+        },
+        {
+          "name": "scenario motes:[] and shades:[] replace the lists with nothing even when random flags are true",
+          "status": "passed"
+        },
+        {
+          "name": "scenario player pos, carried, flames and time_left_s are taken from the scenario; building it emits nothing",
+          "status": "passed"
+        },
+        {
+          "name": "scenario random_motes:false lists only the given motes with ids M1..; shades given get ids S1..",
+          "status": "passed"
+        },
+        {
+          "name": "scenario without a scenario the game fills the island with random motes (30) and no shades at tick 0",
+          "status": "passed"
+        },
+        {
+          "name": "shades a touching shade takes a flame, makes the player drop floor(carried*ratio), then invulnerability protects for invuln_s",
+          "status": "passed"
+        },
+        {
+          "name": "shades dropped motes land outside pickup radius so they are not instantly re-collected",
+          "status": "passed"
+        },
+        {
+          "name": "shades last flame lost ends the game: player_hit, game_over(lost, no_flames) on the same tick, end line",
+          "status": "passed"
+        },
+        {
+          "name": "shades random_shades spawns S1 after 5 s and S2 after 6 s more, each with a shade_spawned event",
+          "status": "passed"
+        },
+        {
+          "name": "shades shades chase slower than the player",
+          "status": "passed"
+        },
+        {
+          "name": "shades shades never enter safe_radius around a lantern, so a player standing on the lantern is not hit",
+          "status": "passed"
+        },
+        {
+          "name": "tick model --ticks N runs exactly N steps; end line reports N",
+          "status": "passed"
+        },
+        {
+          "name": "tick model events of step k carry tick k+1 (mote at 5 m, radius 1.5: picked after 35 steps)",
+          "status": "passed"
+        },
+        {
+          "name": "tick model snapshot at tick 0 is taken before any input is applied",
+          "status": "passed"
+        },
+        {
+          "name": "tick model snapshots come every 10 ticks by default, starting at tick 0",
+          "status": "passed"
+        },
+        {
+          "name": "tick model step k uses input of tick k: after 60 steps at 6 m/s the player is 6 m along +Z",
+          "status": "passed"
+        },
+        {
+          "name": "tick model time_left_s = duration - steps/60",
+          "status": "passed"
+        }
+      ]
+    }
+  ]
+}
