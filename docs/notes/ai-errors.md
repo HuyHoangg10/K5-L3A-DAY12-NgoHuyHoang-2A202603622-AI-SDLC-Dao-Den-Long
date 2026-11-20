@@ -13,4 +13,5 @@ Real cases only. Format: what happened, how it was noticed, what changed in the 
 | 7 | 1 | The test "a stunned shade cannot hit the player" could not fail: the pulse pushes the shade 4 m away, so it never touches the player anyway. | Reviewer mutated the code (removed the stun check), 88/88 still passed. | Test rewritten so the player walks into the stunned shade. |
 | 8 | 1 | No tests for radius boundaries, win-vs-dawn priority, yaw sign, air jump, cooldown off-by-one, wall radius, max shades. Wall test sampled one tick and missed a wall at 60 m. | Reviewer mutation run: 11 of 36 mutants survived. | `tests/edges.test.ts` added; I re-ran the surviving mutants and they are now caught. |
 | 9 | 1 | The requirement text said "one mote per step" but the code takes every mote in range. | Reviewer read the code against the text. | Text and test names fixed to describe the real rule (A-22). |
+| 10 | extras | First kit test suite let a mutant survive (all three cards flying the same direction), and the skill bar labels were clipped / mispositioned in the browser. | Own mutation run; screenshot. | Added the fan-spread test; fixed CSS (`left: 0`, wider cells). |
 

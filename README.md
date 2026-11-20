@@ -20,14 +20,17 @@ Then open the address Vite prints (http://localhost:5173). Click "Begin the nigh
 
 ## Controls
 
+Right hand moves, left hand plays the cards.
+
 | key | action |
 |---|---|
-| W A S D / arrow keys | move (relative to the camera) |
+| arrow keys | move (relative to the camera) |
 | Space | jump |
-| E | put the fireflies you carry into the nearest lantern (within 3 m) |
-| Q or F | glow: stuns and pushes away Ink Shades nearby, costs 2 fireflies |
+| F | put the fireflies you carry into the nearest lantern (within 3 m) |
+| D | glow: stuns and pushes away Ink Shades nearby, costs 2 fireflies |
+| Q W E R | card skills, see "Creative additions" below |
 | mouse drag | turn the camera |
-| R | restart |
+| Enter | play again (after the night is over) |
 
 Fireflies are picked up automatically when you walk over them.
 
@@ -90,8 +93,22 @@ The contract for the grader is in `game.contract.json` (`tuning` equals `src/sim
 
 Every other guess I had to make is listed with an id in `docs/notes/assumptions.md`.
 
+## Creative additions: Lantern Cards (Q W E R)
+
+Four skills for Mây, in the style of the Q/W/E/R kits of MOBA games. Names, art and numbers are my own. They live in `src/extras/` and are only wired in by `src/render/game.ts`, so **headless mode does not contain them**: `src/sim` and `src/headless` never import that folder, and the evidence script checks that every scenario output is byte-identical to the one recorded at tag `phase-1` (`npm run evidence:extras`, results in `docs/evidence/extras/README.md`).
+
+| key | skill | what it does | cooldown |
+|---|---|---|---|
+| Q | Card Fan | costs 1 firefly, throws 3 light cards in a fan in the direction Mây last walked. A card that touches an Ink Shade stuns it for 1 s (and scores 20, like a glow) | 3 s |
+| W | Roll the Card | press once: a card floats over Mây's hat and changes gold, blue, pink. Press again to lock it (it locks by itself after 3 s). The next Card Fan uses it: **gold** stuns 3 s, **blue** gives one firefly back, **pink** pushes the shade 5 m away | 8 s (starts when the card is locked) |
+| E | Lucky Deck | for 6 s every firefly you pick up counts double (up to capacity, bonus points too) | 18 s |
+| R | Lantern Gate | face the camera toward a lantern and press R. After 1.5 s Mây appears 2 m from that lantern, inside its safe circle. A hit during the channel cancels it | 25 s (5 s if cancelled) |
+
+The skill bar at the bottom shows the cooldowns. The kit's rules are tested in `tests/extras.test.ts`.
+
 ## Repository map
 
+- `src/extras/`: the card skills (live mode only)
 - `docs/spec/phase-1.md`: the Phase 1 spec, copied as given
 - `docs/notes/`: assumptions, AI usage log, where the AI was wrong, evaluation, retro
 - `docs/evidence/`: generated evidence (`phase-1/README.md` is the table), `harness-check.md` for the hooks

@@ -29,3 +29,14 @@ One table per phase. "Checked by" points to a test (tests/…) or an evidence re
 | A-21 | `time_left_s` at the end | Never below 0. Dawn is declared in the step where `duration - steps/60 <= 0`. | | R20 |
 | A-22 | Pickup when several motes are in range | All of them are taken in the same tick (one `mote_picked` event each, `carried` going up by 1) until `carry_capacity` is reached. | | tests/edges.test.ts |
 | A-23 | Scenario `player.pos` outside the island or above ground | Outside the 50 m wall the player is pulled back onto the circle on the first step. Above ground (y > 0) the player falls with gravity. | Only matters for odd scenarios. | not tested, noted as a risk |
+
+## Creative additions (Lantern Cards, ships with phase 2)
+
+| id | unclear point | assumption | effect | checked by |
+|---|---|---|---|---|
+| C-1 | Keys: Q W E R were glow / interact / restart and WASD moved | You asked for Q W E R as skills and movement on the right hand. Arrow keys move; D = glow, F = put fireflies in a lantern, Enter = play again (only after the night ended). Phase-1 keys stay as documented at tag `phase-1`. | Live game only. Headless inputs are unchanged. | README, manual play |
+| C-2 | How do the skills touch the rules without changing headless output? | `src/extras/cards.ts` reads and writes public sim fields (stun ticks, carried, score, player position) after each `sim.step()`; nothing in `src/sim` or `src/headless` imports it. Idle kit = identical sim. | Live rules differ from headless only when skills are used. | tests/extras.test.ts, evidence X01 |
+| C-3 | Aim direction | The direction Mây last walked; before any movement, the camera direction. | | extras tests |
+| C-4 | Theme and names | Original names (Card Fan, Roll the Card, Lucky Deck, Lantern Gate), Mây keeps her own identity; only the Q/W/E/R kit structure is inspired by MOBA champions. No third-party character, name or art (lab rule 8). | | CREDITS.md |
+| C-5 | Numbers | Q: cost 1 firefly, cd 3 s, 3 cards at +-16 degrees, 24 m/s, range 14 m, stun 1 s. W: card changes every 0.1 s, auto-lock 3 s, cd 8 s, card held up to 12 s; gold stun 3 s, blue +1 firefly, pink push 5 m. E: 6 s, cd 18 s. R: 1.5 s channel, cd 25 s (5 s if cancelled by a hit), lands 2 m from the lantern. All in `KIT` in `src/extras/cards.ts`. | Live only. | extras tests |
+
