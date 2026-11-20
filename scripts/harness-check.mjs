@@ -28,6 +28,7 @@ export function runHarnessChecks() {
   add("Write docs/evidence/phase-1/x.md", tool("Write", { file_path: "docs/evidence/phase-1/x.md", content: "x" }), 2, "evidence");
   add("Edit docs\\evidence\\phase-1\\a.jsonl (backslashes)", tool("Edit", { file_path: "D:\\repo\\docs\\evidence\\phase-1\\a.jsonl" }), 2, "evidence");
   add("Write docs/evidence/requirements.json (hand-written file, allowed)", tool("Write", { file_path: "docs/evidence/requirements.json" }), 0);
+  add("Write docs/evidence/requirements-extras.json (hand-written file, allowed)", tool("Write", { file_path: "docs/evidence/requirements-extras.json" }), 0);
   add("Write src/sim/sim.ts (normal file)", tool("Write", { file_path: "src/sim/sim.ts" }), 0);
   add("Bash: echo x > docs/evidence/a.md", tool("Bash", { command: "echo x > docs/evidence/a.md" }), 2, "evidence");
   add("Bash: cp a docs/evidence/b", tool("Bash", { command: "cp a docs/evidence/b" }), 2, "evidence");

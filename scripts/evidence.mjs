@@ -9,7 +9,8 @@ import { buildHeadless } from "./build-headless.mjs";
 import { runHarnessChecks } from "./harness-check.mjs";
 import { root, readManifest, runCli, runEntry } from "./lib.mjs";
 
-const PHASE = process.env.EVIDENCE_PHASE || "phase-1";
+const argPhase = process.argv.indexOf("--phase");
+const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-1"; // "phase-1" or "extras"
 const outDir = path.join(root, "docs/evidence", PHASE);
 const rel = (p) => path.relative(root, p).split(path.sep).join("/");
 
@@ -259,6 +260,27 @@ const checks = {
     const o = out("full_night");
     return endOf("full_night").ticks === 14400 && o.ms < 30000 ? [] : [`full_night ran ${endOf("full_night").ticks} ticks in ${o.ms} ms`];
   },
+  extras_off() {
+    // headless output with the extras in the repo must equal the output recorded at the phase-1 tag
+    const f = [];
+    if (readFileSync(path.join(root, "dist/headless/cli.js"), "utf8").includes("CardKit")) f.push("built CLI contains extras code");
+    for (const [name, o] of outputs) {
+      let tagged;
+      try {
+        tagged = execFileSync("git", ["show", `phase-1:docs/evidence/phase-1/${name}.jsonl`], { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
+      } catch {
+        f.push(`${name}: cannot read the phase-1 tag (is it fetched?)`);
+        continue;
+      }
+      if (tagged !== o.raw) f.push(`${name}: output differs from the phase-1 tag`);
+    }
+    return f;
+  },
+  extras_tests() {
+    const file = testFiles.find((x) => x.file === "tests/extras.test.ts");
+    const t = file?.tests ?? [];
+    return t.length >= 20 && t.every((x) => x.status === "passed") ? [] : [`extras tests: ${t.filter((x) => x.status !== "passed").length} failing or too few (${t.length})`];
+  },
   unit_tests() {
     return vitest && vitest.numFailedTests === 0 && vitest.numTotalTests > 0 ? [] : [`vitest failed: ${vitest ? vitest.numFailedTests + " failing" : "no report"}`];
   },
@@ -274,7 +296,7 @@ const checks = {
 };
 
 // ---- 6. requirements table ------------------------------------------------------------------
-const reqs = JSON.parse(readFileSync(path.join(root, "docs/evidence/requirements.json"), "utf8")).requirements;
+const reqs = JSON.parse(readFileSync(path.join(root, PHASE === "phase-1" ? "docs/evidence/requirements.json" : `docs/evidence/requirements-${PHASE}.json`), "utf8")).requirements;
 const rows = reqs.map((r) => {
   let fails;
   try {

@@ -1,5 +1,5 @@
 // PreToolUse guard. Exit 2 (reason on stderr) blocks the tool call.
-// Blocks: hand-writes to docs/evidence/** (only scripts/evidence.mjs writes there; requirements.json is hand-written),
+// Blocks: hand-writes to docs/evidence/** (only scripts/evidence.mjs writes there; requirements*.json are hand-written),
 // git push --force / --force-with-lease, and any read or write of .env files.
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -22,7 +22,7 @@ function commandTouchesEnv(cmd) {
 function isEvidencePath(p) {
   const n = norm(p);
   if (!/(^|\/)docs\/evidence(\/|$)/.test(n)) return false;
-  return !/(^|\/)docs\/evidence\/requirements\.json$/.test(n);
+  return !/(^|\/)docs\/evidence\/requirements(-[a-z0-9-]+)?\.json$/.test(n);
 }
 
 /** Returns a reason string if the call must be blocked, otherwise null. */

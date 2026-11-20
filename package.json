@@ -18,6 +18,7 @@
     "test": "npm run build:headless && vitest run",
     "headless": "node dist/headless/cli.js",
     "evidence": "node scripts/evidence.mjs",
+    "evidence:extras": "node scripts/evidence.mjs --phase extras",
     "determinism": "node scripts/determinism.mjs",
     "check": "npm run typecheck && npm test && npm run determinism"
   },

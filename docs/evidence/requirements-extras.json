@@ -1,0 +1,11 @@
+{
+  "phase": "extras",
+  "note": "Creative addition (Lantern Cards, Q W E R). Written by hand; results come from scripts/evidence.mjs --phase extras. It re-runs every phase-1 scenario and compares with the files stored at the phase-1 tag.",
+  "requirements": [
+    { "id": "X01", "requirement": "The extras are off in headless mode: every scenario output is byte-identical to the output recorded at tag phase-1, and the built CLI contains no extras code.", "how": "Run all scenarios through the built CLI; compare with `git show phase-1:docs/evidence/phase-1/<name>.jsonl`; search dist/headless/cli.js for the kit's class name.", "scenarios": ["pickup", "pulse_stun", "win", "random_default", "full_night"], "check": "extras_off" },
+    { "id": "X02", "requirement": "The rules of phase 1 still hold: all phase-1 requirements are met in this build (determinism, output format, tick model).", "how": "Same assertions as phase-1 for determinism and output format, run on this build.", "scenarios": ["random_default", "full_night"], "check": "determinism" },
+    { "id": "X03", "requirement": "Output format is unchanged by the extras.", "how": "Structural assertions over every scenario output.", "scenarios": ["pulse_stun", "random_default"], "check": "output_format" },
+    { "id": "X04", "requirement": "The skill kit (Q Card Fan, W Roll the Card, E Lucky Deck, R Lantern Gate) behaves as specified in tests/extras.test.ts, including that an idle kit changes nothing.", "how": "vitest: 20 or more tests in tests/extras.test.ts must all pass.", "scenarios": [], "check": "extras_tests" },
+    { "id": "X05", "requirement": "The whole unit test suite still passes.", "how": "vitest run, counts from its JSON report.", "scenarios": [], "check": "unit_tests" }
+  ]
+}
