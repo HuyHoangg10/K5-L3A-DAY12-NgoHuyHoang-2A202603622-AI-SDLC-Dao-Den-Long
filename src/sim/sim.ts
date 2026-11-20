@@ -294,9 +294,9 @@ export class Sim {
     }
     this.simTick += 1;
 
+    const waiting = this.player.fallWait > 0; // the respawn tick itself does not act: Mây appears with velocity 0
     this.countdown();
     this.updateWind();
-    const waiting = this.player.fallWait > 0;
     this.litNow = [];
     if (!waiting) {
       this.movePlayer(edge.jump, edge.dash);
@@ -439,7 +439,7 @@ export class Sim {
     const speed = T.player_speed * (P.charm > 0 ? C.charm_speed_mult : 1);
 
     // dash: a false->true press when the cooldown is over; the charm removes the cooldown (a new press is still needed)
-    if (dashEdge && P.dashTicks === 0 && P.dashCd <= 0) {
+    if (dashEdge && P.dashTicks === 0 && (P.dashCd <= 0 || P.charm > 0)) {
       P.dashTicks = C.dash_ticks;
       P.dashDir = moving ? unit2(wx, wz) : [...P.facing];
       P.dashCd = P.charm > 0 ? 0 : C.dash_cooldown_ticks;
@@ -873,7 +873,7 @@ export class Sim {
     P.invuln = Math.round(T.invuln_s * C.tick_rate);
     hitter.recoilTicks = C.recoil_ticks;
     hitter.recoilDir = unit2(hitter.pos[0] - P.pos[0], hitter.pos[2] - P.pos[2]);
-    this.emit("player_hit", { by: "shade", flames: P.flames, dropped, lost: 0 });
+    this.emit("player_hit", { by: "shade", flames: P.flames, dropped });
   }
 
   // ---- 10. spawns -----------------------------------------------------------------------------------

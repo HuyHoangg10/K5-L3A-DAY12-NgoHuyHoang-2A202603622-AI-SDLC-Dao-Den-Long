@@ -154,7 +154,7 @@ describe("Ink Shades", () => {
   it("a touch costs a flame, drops floor(carried/2) fireflies on a ring 1.5-2.5 m away, starts 90 ticks of invulnerability and a 60-tick recoil", () => {
     const r = runNamed("shade_hit");
     const hits = r.eventsNamed("player_hit");
-    expect(hits[0]).toEqual({ type: "event", tick: 1, name: "player_hit", data: { by: "shade", flames: 2, dropped: 2, lost: 0 } });
+    expect(hits[0]).toEqual({ type: "event", tick: 1, name: "player_hit", data: { by: "shade", flames: 2, dropped: 2 } });
     const s1 = r.snapAt(1);
     expect(s1.player.carried).toBe(3);
     expect(s1.player.invuln).toBe(true);

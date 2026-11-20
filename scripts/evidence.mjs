@@ -161,7 +161,7 @@ const checks = {
     const hits = events("shade_hit", "player_hit");
     return fails(
       [eq(hits.map((e) => e.tick), [1, 91, 181]), `hit ticks ${JSON.stringify(hits.map((e) => e.tick))}, expected [1,91,181]`],
-      [eq(hits[0]?.data, { by: "shade", flames: 2, dropped: 2, lost: 0 }), "first hit data wrong"],
+      [eq(hits[0]?.data, { by: "shade", flames: 2, dropped: 2 }), "first hit data wrong"],
       [snapAt("shade_hit", 1).shades[0].state === "recoil" && snapAt("shade_hit", 60).shades[0].state === "recoil" && snapAt("shade_hit", 61).shades[0].state === "chase", "recoil is not 60 ticks"],
       [snapAt("shade_hit", 1).motes.every((m) => m.kind === "dropped" && m.ttl_s === 8 && dxz(m.pos, snapAt("shade_hit", 1).player.pos) >= 1.499 && dxz(m.pos, snapAt("shade_hit", 1).player.pos) <= 2.501), "dropped fireflies wrong"],
       [eq(events("lose_flames", "game_over")[0]?.data, { result: "lost", reason: "no_flames" }) && endOf("lose_flames").ticks === 1, "no_flames loss wrong"],

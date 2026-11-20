@@ -1,7 +1,7 @@
 {
-  "passed": 224,
+  "passed": 233,
   "failed": 0,
-  "total": 224,
+  "total": 233,
   "files": [
     {
       "file": "tests/champions.test.ts",
@@ -667,6 +667,47 @@
         },
         {
           "name": "standard maps: geometry the ramps rise 3 m between r 30 and r 24 and are 3 m wide",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/review2.test.ts",
+      "tests": [
+        {
+          "name": "review of phase 2: exact boundaries detection: a wandering shade exactly 12.0 m away starts to chase, 12.01 m does not",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: exact boundaries giving up: a chasing shade exactly 18.0 m away keeps chasing, 18.01 m gives up",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: exact boundaries new shades appear at least 15 m from Mây",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: exact boundaries pickup: height difference 1.5 m picks, 1.51 m does not",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: exact boundaries pickup: horizontal distance 1.0 m picks, 1.01 m does not",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: findings fixed a shade hit has no `lost` field; only a fall adds it (spec part 4)",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: findings fixed on the respawn tick Mây stands still at the start point with velocity 0, even with a move key held",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: findings fixed the `end` line never says paused: a run stopped while paused ends as playing",
+          "status": "passed"
+        },
+        {
+          "name": "review of phase 2: findings fixed with the charm the dash has no cooldown, even if a cooldown was already running",
           "status": "passed"
         }
       ]

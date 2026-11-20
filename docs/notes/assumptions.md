@@ -73,4 +73,4 @@ The standard numbers replace my own Phase 1 numbers (the old table above is what
 | C-7 | Roll the Card | Changed on request: the card acts the moment it is chosen (gold: freeze nearby shades; blue: +3 fireflies; pink: run fast), no longer boosting the next Q. | | extras.test.ts |
 | C-8 | New E | The card reader's E is my own invention: Lure Lantern. | | extras.test.ts |
 | C-9 | Numbers | All numbers are in `KIT` (cards.ts), `CUB` (cub.ts), `WEAVER` (weaver.ts). Cooldowns and durations are whole ticks. | Live only. | tests |
-| C-10 | Phase 2 | The lab board still shows only placeholder tabs for Phase 2 ("Ticket-02"), so Phase 2 has not been started. Nothing in this repo is tagged `phase-2`. | | lab board |
+| C-10 | Phase 2 | Superseded: the board now shows Phase 2 and 3 (Ticket-02, Ticket-03) and Phase 4; Phase 2 is built (see P2-* below) and tagged `phase-2` once the independent review is answered. | | lab board |
