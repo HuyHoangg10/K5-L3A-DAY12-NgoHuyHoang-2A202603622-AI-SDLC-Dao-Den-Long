@@ -20,16 +20,17 @@ Then open the address Vite prints (http://localhost:5173). Click "Begin the nigh
 
 ## Controls
 
-Right hand moves, left hand plays the cards.
+Pick a champion on the start screen (click, or press 1 / 2 / 3), then:
 
-| key | action |
+| input | action |
 |---|---|
-| arrow keys | move (relative to the camera) |
+| right mouse button | walk to the point under the mouse (hold to keep following it) |
+| left or middle mouse drag | turn the camera (the 3D view still rotates) |
+| arrow keys | walk with the keyboard (cancels a click target) |
 | Space | jump |
 | F | put the fireflies you carry into the nearest lantern (within 3 m) |
 | D | glow: stuns and pushes away Ink Shades nearby, costs 2 fireflies |
-| Q W E R | card skills, see "Creative additions" below |
-| mouse drag | turn the camera |
+| Q W E R | the champion's four skills, aimed at the mouse |
 | Enter | play again (after the night is over) |
 
 Fireflies are picked up automatically when you walk over them.
@@ -93,18 +94,42 @@ The contract for the grader is in `game.contract.json` (`tuning` equals `src/sim
 
 Every other guess I had to make is listed with an id in `docs/notes/assumptions.md`.
 
-## Creative additions: Lantern Cards (Q W E R)
+## Creative additions: champions with Q W E R
 
-Four skills for Mây, in the style of the Q/W/E/R kits of MOBA games. Names, art and numbers are my own. They live in `src/extras/` and are only wired in by `src/render/game.ts`, so **headless mode does not contain them**: `src/sim` and `src/headless` never import that folder, and the evidence script checks that every scenario output is byte-identical to the one recorded at tag `phase-1` (`npm run evidence:extras`, results in `docs/evidence/extras/README.md`).
+Everything in this section is live-game only. It lives in `src/extras/` and is wired in by `src/render/game.ts`; `src/sim` and `src/headless` never import it, so **headless mode does not contain it**. `npm run evidence:extras` re-runs every scenario and checks that the output is byte-identical to the files recorded at tag `phase-1` (see `docs/evidence/extras/README.md`). Names, art and numbers are my own; the shape of the kits is inspired by champion kits in MOBA games.
+
+Shades have 3 "ink". Skills thin the ink; at 0 the shade dissolves into a firefly (30 points). Fireflies are the mana of the champions that need it.
+
+**1. Mây the Card Reader**
 
 | key | skill | what it does | cooldown |
 |---|---|---|---|
-| Q | Card Fan | costs 1 firefly, throws 3 light cards in a fan in the direction Mây last walked. A card that touches an Ink Shade stuns it for 1 s (and scores 20, like a glow) | 3 s |
-| W | Roll the Card | press once: a card floats over Mây's hat and changes gold, blue, pink. Press again to lock it (it locks by itself after 3 s). The next Card Fan uses it: **gold** stuns 3 s, **blue** gives one firefly back, **pink** pushes the shade 5 m away | 8 s (starts when the card is locked) |
-| E | Lucky Deck | for 6 s every firefly you pick up counts double (up to capacity, bonus points too) | 18 s |
-| R | Lantern Gate | face the camera toward a lantern and press R. After 1.5 s Mây appears 2 m from that lantern, inside its safe circle. A hit during the channel cancels it | 25 s (5 s if cancelled) |
+| Q | Card Fan | costs 1 firefly. 3 cards fly toward the mouse in a fan and pass through shades: each is stunned 1 s and loses 1 ink | 2.5 s |
+| W | Roll the Card | a card flips gold, blue, pink over your hat. Press W again to stop (it stops by itself after 3 s) and the card acts at once. **Gold**: every shade within 7 m freezes 2.5 s. **Blue**: +3 fireflies. **Pink**: run 1.5x faster for 4 s | 8 s |
+| E | Lure Lantern | costs 1 firefly. Throw a bright lantern up to 10 m toward the mouse. For 4 s shades within 16 m of it walk to the lantern instead of to you, then it bursts: stun 2 s and 1 ink | 14 s |
+| R | Lantern Gate | put the mouse near a lantern and press R. After 1.5 s you appear 2 m from it. A hit cancels it | 25 s (5 s if cancelled) |
 
-The skill bar at the bottom shows the cooldowns. The kit's rules are tested in `tests/extras.test.ts`.
+**2. Rowdy Cub** (no mana, uses a rage bar; rage comes from hitting shades and from being hit)
+
+| key | small form | big form (rage full, 10 s) |
+|---|---|---|
+| Q | Rebound Stone: a stone flies out, comes back, slows what it touches both ways, catching it refunds 40% of the cooldown | Boulder Toss: a big boulder, 2 ink, slows, does not return |
+| W | Zippy Streak (passive): every 3 hits within 6 s you sprint 1.3x for 2 s | Wallop: after a short wind-up, a cone in front is stunned 1.25 s and thinned |
+| E | Bounce: leap up to 6 m toward the mouse; shades where you land are slowed | Crunch: same leap, wider landing, stronger slow and 1 ink |
+| R | needs the big form | Rampage: shades within 5 m are thrown back 6 m and stunned 1.5 s |
+
+The cub is 10% faster than Mây when small and grows 1.55x when big.
+
+**3. Serpent Weaver** (fireflies are her mana, +10% move speed always)
+
+| key | skill | what it does | cooldown |
+|---|---|---|---|
+| Q | Venom Burst | 1 firefly. A circle appears at the mouse (up to 9 m) and bursts after 0.4 s: shades inside are poisoned (1 ink over 3 s). If it hits, you run 1.4x faster for 3 s | 3.5 s |
+| W | Haze Ring | 1 firefly. After 0.5 s a haze stays for 5 s at the mouse: shades inside are slowed to half speed and kept poisoned | 14 s |
+| E | Twin Sting | free. Hits the shade nearest to the mouse within 8 m for 1 ink (2 if it is poisoned). If it dissolves you get 2 fireflies back | 2 s |
+| R | Stone Stare | 2 fireflies. An 80 degree cone, 9 m, toward the mouse: shades inside freeze 2 s and lose 1 ink | 25 s |
+
+The rules of every kit are tested in `tests/extras.test.ts`, `tests/champions.test.ts` and `tests/steer.test.ts`.
 
 ## Repository map
 

@@ -6,7 +6,8 @@ Token and cost numbers here are **estimates**. The agent cannot read its own exa
 |---|---|---|---|---|
 | 0 (setup + harness) | Claude Code, Sonnet 5.5, reasoning High | fork repo, scaffold, harness, evidence script, notes | ~120k (estimate) | long brief up front, files written once, no clarifying questions |
 | 1 (Phase 1) | Claude Code, Sonnet 5.5, reasoning High; review by a fresh subagent following `.claude/agents/reviewer.md` | sim, CLI, tests, 3D view, README, review, fixes | ~350k main session + ~140k reviewer subagent (the subagent reported 138,678 tokens; the main number is my estimate from file sizes, see above) | tests as the main feedback loop (1 s per run), evidence read from the generated README, reviewer in its own context |
-| creative add-on (Lantern Cards) | Claude Code, Sonnet 5.5, reasoning High | design questions to you, kit logic, 27 tests, view/HUD, evidence | ~90k (estimate) | pure logic class tested with 1-s vitest runs before any drawing; browser checked with 3 screenshots; mutation checks instead of a second review |
+| creative add-on 1 (Lantern Cards) | Claude Code, Sonnet 5.5, reasoning High | design questions to you, kit logic, 27 tests, view/HUD, evidence | ~90k (estimate) | pure logic class tested with 1-s vitest runs before any drawing; browser checked with 3 screenshots; mutation checks instead of a second review |
+| creative add-on 2 (3 champions, click-to-move, select screen) | Claude Code, Sonnet 5.5, reasoning High | kit base class, 3 kits, generic effect view, select screen, steering, about 150 new tests, browser check | ~200k (estimate) | one generic `KitBase` and effect view instead of three view files; tests first with 1-s runs; mutation checks (found 2 weak tests) |
 
 ## Phase 0 and 1 notes
 

@@ -8,7 +8,7 @@ src/sim/       pure game logic: no Date, no Math.random, no DOM, no Three.js
 src/headless/  Node CLI (reads args/scenario/inputs, writes JSONL)
 src/render/    Three.js scene, camera, HUD, keyboard (uses src/sim, adds no rules)
 src/main.ts    web entry
-src/extras/    creative additions, always OFF in headless mode
+src/extras/    creative additions (champion kits Q W E R), live game only, never imported by sim/headless
 scenarios/     scenario + inputs used by tests and evidence (manifest.json lists them)
 tests/         vitest
 scripts/       Node .mjs only (build, evidence, determinism, hooks)

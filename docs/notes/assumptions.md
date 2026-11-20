@@ -30,13 +30,17 @@ One table per phase. "Checked by" points to a test (tests/…) or an evidence re
 | A-22 | Pickup when several motes are in range | All of them are taken in the same tick (one `mote_picked` event each, `carried` going up by 1) until `carry_capacity` is reached. | | tests/edges.test.ts |
 | A-23 | Scenario `player.pos` outside the island or above ground | Outside the 50 m wall the player is pulled back onto the circle on the first step. Above ground (y > 0) the player falls with gravity. | Only matters for odd scenarios. | not tested, noted as a risk |
 
-## Creative additions (Lantern Cards, ships with phase 2)
+## Creative additions (champions, ship with phase 2)
 
 | id | unclear point | assumption | effect | checked by |
 |---|---|---|---|---|
-| C-1 | Keys: Q W E R were glow / interact / restart and WASD moved | You asked for Q W E R as skills and movement on the right hand. Arrow keys move; D = glow, F = put fireflies in a lantern, Enter = play again (only after the night ended). Phase-1 keys stay as documented at tag `phase-1`. | Live game only. Headless inputs are unchanged. | README, manual play |
-| C-2 | How do the skills touch the rules without changing headless output? | `src/extras/cards.ts` reads and writes public sim fields (stun ticks, carried, score, player position) after each `sim.step()`; nothing in `src/sim` or `src/headless` imports it. Idle kit = identical sim. | Live rules differ from headless only when skills are used. | tests/extras.test.ts, evidence X01 |
-| C-3 | Aim direction | The direction Mây last walked; before any movement, the camera direction. | | extras tests |
-| C-4 | Theme and names | Original names (Card Fan, Roll the Card, Lucky Deck, Lantern Gate), Mây keeps her own identity; only the Q/W/E/R kit structure is inspired by MOBA champions. No third-party character, name or art (lab rule 8). | | CREDITS.md |
-| C-5 | Numbers | Q: cost 1 firefly, cd 3 s, 3 cards at +-16 degrees, 24 m/s, range 14 m, stun 1 s. W: card changes every 0.1 s, auto-lock 3 s, cd 8 s, card held up to 12 s; gold stun 3 s, blue +1 firefly, pink push 5 m. E: 6 s, cd 18 s. R: 1.5 s channel, cd 25 s (5 s if cancelled by a hit), lands 2 m from the lantern. All in `KIT` in `src/extras/cards.ts`. | Live only. | extras tests |
-
+| C-1 | Controls | Right mouse button = walk to the point (hold to follow), left/middle drag = turn the camera (so the 3D view still rotates), arrow keys also walk. Q W E R are skills, D = glow, F = put fireflies in a lantern, Enter = play again after the night. The "skills on 1 2 3 4" fallback was not needed. | Live game only. Phase-1 keys stay documented at tag `phase-1`. | steer.test.ts, manual play |
+| C-2 | How do extras touch the rules without changing headless output? | `src/extras` reads and writes public sim fields (stun ticks, shade positions, carried, score, player position, motes) after each `sim.step()`; nothing in `src/sim` or `src/headless` imports it; an idle kit never changes the sim except passive speed bonuses. | Live rules differ from headless only when skills are used. | extras.test.ts, evidence X01 |
+| C-3 | Existing characters | You asked for kits of two existing game champions (copying the skills) plus a card-thrower. The lab rules (`docs/lab-brief/RULES.md`, section 8) forbid existing characters, so I kept the skill mechanics (the structure of Q/W/E/R) and gave every champion, skill name, look and number my own design. This is a decision to review: using the original names would be your call and the lab's risk. | | CREDITS.md |
+| C-4 | Shades have no health in the game | In live mode shades have 3 ink; skills thin it, at 0 the shade dissolves into a firefly and gives 30 points. No violence (PRD: no gore). | Live only. | extras.test.ts "ink" |
+| C-5 | Mana | Fireflies you carry are the mana of the card reader's Q/E and the weaver's Q/W/R. The cub has a rage bar instead. | | champions.test.ts |
+| C-6 | Aim | Skills aim at the mouse position on the ground (ray from the camera to y = 0). With no mouse position the aim falls back to the last walking direction, then the camera direction. | | extras.test.ts |
+| C-7 | Roll the Card | Changed on request: the card acts the moment it is chosen (gold: freeze nearby shades; blue: +3 fireflies; pink: run fast), no longer boosting the next Q. | | extras.test.ts |
+| C-8 | New E | The card reader's E is my own invention: Lure Lantern. | | extras.test.ts |
+| C-9 | Numbers | All numbers are in `KIT` (cards.ts), `CUB` (cub.ts), `WEAVER` (weaver.ts). Cooldowns and durations are whole ticks. | Live only. | tests |
+| C-10 | Phase 2 | The lab board still shows only placeholder tabs for Phase 2 ("Ticket-02"), so Phase 2 has not been started. Nothing in this repo is tagged `phase-2`. | | lab board |
