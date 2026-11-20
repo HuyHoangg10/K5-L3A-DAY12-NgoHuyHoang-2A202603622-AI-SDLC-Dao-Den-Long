@@ -1,8 +1,157 @@
 {
-  "passed": 132,
+  "passed": 183,
   "failed": 0,
-  "total": 132,
+  "total": 183,
   "files": [
+    {
+      "file": "tests/champions.test.ts",
+      "tests": [
+        {
+          "name": "Rowdy Cub: big form E Crunch also thins shades where it lands, with a bigger radius and stronger slow",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form Q is a boulder: no return, 2 damage, thicker hit radius",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form R Rampage: shades within radius are thrown r.push metres away and stunned; farther ones are not",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form W Wallop misses a shade behind Mây",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: big form W Wallop: the area is hit after a short delay, not before",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form a shade near Mây slowly builds rage (passiveRage per second)",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form each skill hit gives hitRage; a hit on Mây gives hurtRage; rage shows on the bar",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form full rage turns the cub big for megaTicks, then it shrinks back and rage resets",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form rage drains while big, so it is the timer of the big form",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: rage and the big form the small form is quicker than Mây: speed x miniSpeed",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form catching the stone takes exactly refund x cooldown off what was left",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form E Bounce does not take Mây off the island",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form E Bounce: leaps toward the mouse but at most e.range metres, and slows shades where it lands",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Q flies out, hits a shade on the way out and again on the way back, then is caught and refunds cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Q range: the stone turns around after q.range metres",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form the stone slows what it hits: the shade moves at slow x speed afterwards",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form W is passive in the small form (just a hint); R needs the big form",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Zippy Streak: every 3rd hit within the window gives a sprint",
+          "status": "passed"
+        },
+        {
+          "name": "Rowdy Cub: small form Zippy Streak: hits older than the window are forgotten",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver E Twin Sting: hits the shade nearest to the mouse, within range; free; 1 damage",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver E Twin Sting: out of range = no target, no cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver E Twin Sting: poisoned shades take extra damage, and a kill gives refund light",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver light is her mana: Q 1, W 1, R 2 fireflies; E is free; no light means no cast and no cooldown",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver passive: always runs x speed",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver Q range: the circle is placed at most q.range metres away",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver Q Venom Burst that hits nothing gives no speed boost",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver Q Venom Burst: telegraphed circle at the mouse; after the delay shades inside are poisoned, others are not; hit = speed boost",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver R Stone Stare: a shade just inside the half-angle is caught",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver R Stone Stare: shades inside the cone are frozen and thinned; one outside the cone angle is untouched",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver skills are shown with their light cost and grey out without light",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver the speed bonus scales both axes: walking diagonally covers speed x mult on x and on z",
+          "status": "passed"
+        },
+        {
+          "name": "Serpent Weaver W Haze Ring: after its delay it slows shades inside to w.slow and keeps them poisoned, for zoneTicks, then ends",
+          "status": "passed"
+        },
+        {
+          "name": "shared base a slow of mult 0.5 halves a chasing shade's step",
+          "status": "passed"
+        },
+        {
+          "name": "shared base kits do nothing once the game is over",
+          "status": "passed"
+        },
+        {
+          "name": "shared base poison and slow are bookkept per shade and forgotten when the shade is gone",
+          "status": "passed"
+        },
+        {
+          "name": "shared base the speed bonus never pushes Mây past the island wall",
+          "status": "passed"
+        }
+      ]
+    },
     {
       "file": "tests/drop.test.ts",
       "tests": [
@@ -97,111 +246,131 @@
       "file": "tests/extras.test.ts",
       "tests": [
         {
-          "name": "E Lucky Deck lasts KIT.e.duration ticks, then has a cooldown",
+          "name": "Card Reader: E Lure Lantern (new) cooldown KIT.e.cd",
           "status": "passed"
         },
         {
-          "name": "E Lucky Deck never goes above carry_capacity",
+          "name": "Card Reader: E Lure Lantern (new) costs a firefly and needs light",
           "status": "passed"
         },
         {
-          "name": "E Lucky Deck with the deck every pickup is worth two, and the score counts the bonus",
+          "name": "Card Reader: E Lure Lantern (new) shades chase the lure instead of Mây while it lasts",
           "status": "passed"
         },
         {
-          "name": "E Lucky Deck without the deck two motes in range give 2 fireflies",
+          "name": "Card Reader: E Lure Lantern (new) the lure can be thrown at most `range` metres away",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan aims where Mây last walked: after walking -X the cards fly -X",
+          "name": "Card Reader: E Lure Lantern (new) when it ends it bursts: shades next to it are stunned and thinned by 1 ink",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan cards stop after KIT.q.range metres",
+          "name": "Card Reader: Q Card Fan a hit shade is stunned for 1 s",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan costs one firefly, throws 3 cards, and starts the cooldown",
+          "name": "Card Reader: Q Card Fan cards pass through: two shades in a line are both hit by one cast, each thinned by 1 ink",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan is blocked during its cooldown and ready again exactly after it",
+          "name": "Card Reader: Q Card Fan cards stop after KIT.q.range metres",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan misses a shade that is 90 degrees off to the side",
+          "name": "Card Reader: Q Card Fan cooldown is exact: a press one tick early is blocked, the exact tick works",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan needs a firefly: with none carried nothing is thrown and nothing is paid",
+          "name": "Card Reader: Q Card Fan costs one firefly, throws 3 cards, starts the cooldown",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan stuns a shade in front of Mây (+Z), scores per_stun once, and the card is used up",
+          "name": "Card Reader: Q Card Fan flies toward the mouse: a shade at -X is hit when the mouse is at -X, missed when there is no mouse (camera looks +Z)",
           "status": "passed"
         },
         {
-          "name": "Q Card Fan the 3 cards fly 0 and +-spreadDeg from the aim direction, and the side cards can hit a shade there",
+          "name": "Card Reader: Q Card Fan needs a firefly: with none carried nothing is thrown, nothing is paid, no cooldown",
           "status": "passed"
         },
         {
-          "name": "R Lantern Gate a hit cancels the channel and starts the short cooldown",
+          "name": "Card Reader: Q Card Fan the 3 cards leave at 0 and +-spreadDeg",
           "status": "passed"
         },
         {
-          "name": "R Lantern Gate channels channel ticks, then moves Mây 2 m from the lantern most in front of the camera",
+          "name": "Card Reader: R Lantern Gate a hit cancels the channel and starts the short cooldown",
           "status": "passed"
         },
         {
-          "name": "R Lantern Gate does not move Mây before the channel ends",
+          "name": "Card Reader: R Lantern Gate channels, then puts Mây 2 m from the lantern nearest to the mouse",
           "status": "passed"
         },
         {
-          "name": "R Lantern Gate full cooldown after a successful gate",
+          "name": "Card Reader: R Lantern Gate does not move Mây before the channel ends",
           "status": "passed"
         },
         {
-          "name": "R Lantern Gate picks the lantern by camera direction: yaw 90 looks along +X, which is L2",
+          "name": "Card Reader: R Lantern Gate full cooldown after a successful gate",
           "status": "passed"
         },
         {
-          "name": "the kit stays out of the Test Contract an idle kit (no keys pressed) never changes the sim: byte-identical snapshots for 900 ticks",
+          "name": "Card Reader: R Lantern Gate without a mouse it uses the camera: yaw 90 looks along +X, which is L2",
           "status": "passed"
         },
         {
-          "name": "the kit stays out of the Test Contract src/sim, src/headless and the built CLI do not reference src/extras",
+          "name": "Card Reader: W Roll the Card (the card acts at once) blue: adds blueMana fireflies, never above capacity",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects a held card expires after holdMax ticks",
+          "name": "Card Reader: W Roll the Card (the card acts at once) cards flip gold -> blue -> pink every 6 ticks and the second press stops on the one showing",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects blue card: the hit gives one firefly back",
+          "name": "Card Reader: W Roll the Card (the card acts at once) cooldown starts at the pick; rolling again before it ends is refused",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects cannot be used again while a card is held or on cooldown",
+          "name": "Card Reader: W Roll the Card (the card acts at once) gold: every shade within goldRadius freezes for goldStun ticks; shades farther away are untouched",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects gold card: stun lasts goldStun ticks instead of the normal stun",
+          "name": "Card Reader: W Roll the Card (the card acts at once) pink: run speed x redBoost for redTicks, then back to normal",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects locks by itself after rollMax ticks",
+          "name": "Card Reader: W Roll the Card (the card acts at once) shows the rolling card above the hat, and clears it after the pick",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects red card: the hit shade ends exactly redPush metres further along the card direction than with a plain card",
+          "name": "Card Reader: W Roll the Card (the card acts at once) stops by itself after rollMax ticks",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects rolls gold -> blue -> red every 6 ticks and locks the card showing at the second press",
+          "name": "every champion stays out of the Test Contract cards: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
           "status": "passed"
         },
         {
-          "name": "W Roll the Card + card effects the card is used by that Q only: the next Q throws plain cards",
+          "name": "every champion stays out of the Test Contract cub: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract src/sim, src/headless and the built CLI do not reference src/extras",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract there are exactly three champions to pick from",
+          "status": "passed"
+        },
+        {
+          "name": "every champion stays out of the Test Contract weaver: an idle kit never changes the sim (byte-identical snapshots for 900 ticks)",
+          "status": "passed"
+        },
+        {
+          "name": "ink: shades dissolve into light, no violence a shade whose ink runs out is removed, leaves a firefly on the ground and gives 30 points",
+          "status": "passed"
+        },
+        {
+          "name": "ink: shades dissolve into light, no violence poison takes exactly 1 ink over 3 seconds",
           "status": "passed"
         }
       ]
@@ -552,6 +721,51 @@
         },
         {
           "name": "tick model time_left_s = duration - steps/60",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/steer.test.ts",
+      "tests": [
+        {
+          "name": "click-to-move steering does not overshoot: the last step is shorter",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering standing on the point = arrived, no move",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering walks in a straight line (no wiggle): every tick moves exactly speed*dt until the last step",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw -60 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 0 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 135 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 180 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 250 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 37 degrees Mây ends within 0.05 m of the clicked point",
+          "status": "passed"
+        },
+        {
+          "name": "click-to-move steering with camera yaw 90 degrees Mây ends within 0.05 m of the clicked point",
           "status": "passed"
         }
       ]
