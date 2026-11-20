@@ -4,8 +4,8 @@ Token and cost numbers here are **estimates**. The agent cannot read its own exa
 
 | phase | tool / model | what for | estimated tokens | how I kept it small |
 |---|---|---|---|---|
-| 0 (setup + harness) | Claude Code, Sonnet 5.5, reasoning High | fork repo, scaffold, harness, evidence script, notes | ~ (to fill at the end of Phase 1) | |
-| 1 (Phase 1) | Claude Code, Sonnet 5.5, reasoning High; `reviewer` subagent for the review | sim, CLI, tests, 3D view, README, review | ~ (to fill at the end of Phase 1) | |
+| 0 (setup + harness) | Claude Code, Sonnet 5.5, reasoning High | fork repo, scaffold, harness, evidence script, notes | ~120k (estimate) | long brief up front, files written once, no clarifying questions |
+| 1 (Phase 1) | Claude Code, Sonnet 5.5, reasoning High; review by a fresh subagent following `.claude/agents/reviewer.md` | sim, CLI, tests, 3D view, README, review, fixes | ~350k main session + ~140k reviewer subagent (the subagent reported 138,678 tokens; the main number is my estimate from file sizes, see above) | tests as the main feedback loop (1 s per run), evidence read from the generated README, reviewer in its own context |
 
 ## Phase 0 and 1 notes
 

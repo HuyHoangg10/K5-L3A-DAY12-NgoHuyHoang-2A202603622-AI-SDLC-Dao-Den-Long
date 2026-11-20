@@ -47,4 +47,4 @@ game.contract.json   Test Contract v1.0; "tuning" must equal src/sim/tuning.ts
 
 ## Rule updates
 When the agent makes the same mistake twice, add exactly one line here saying how to avoid it.
-- (none yet)
+- Derive a test's expected value from the rule in the spec, never by copying what the program printed; then check the test can fail by mutating the code once (seen twice in Phase 1).
