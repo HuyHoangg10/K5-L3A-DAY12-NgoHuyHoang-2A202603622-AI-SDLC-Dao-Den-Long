@@ -2,6 +2,7 @@
 // A kit reads and nudges public sim fields after each sim.step(): stun ticks, shade positions, carried, score.
 // Shades get "ink" (hit points): when it is gone the shade dissolves into light and leaves a firefly. No violence.
 import type { Sim } from "../sim/sim";
+import { supportAt, topAt } from "../sim/maps";
 import { CONSTANTS as C, DT, TUNING as T } from "../sim/tuning";
 import type { Shade } from "../sim/types";
 
@@ -111,12 +112,11 @@ export abstract class KitBase {
     if (len > 1e-4) this.facing = [dx / len, dz / len];
     const mult = this.speedMult;
     if (mult !== 1 && len > 1e-4) {
-      p[0] += dx * (mult - 1);
-      p[2] += dz * (mult - 1);
-      const d = Math.hypot(p[0], p[2]);
-      if (d > C.island_radius) {
-        p[0] *= C.island_radius / d;
-        p[2] *= C.island_radius / d;
+      const nx = p[0] + dx * (mult - 1);
+      const nz = p[2] + dz * (mult - 1);
+      if (this.standable(nx, nz, p[1])) {
+        p[0] = nx;
+        p[2] = nz;
       }
     }
     if (this.boostLeft > 0) this.boostLeft--;
@@ -207,8 +207,12 @@ export abstract class KitBase {
     this.poison.set(s.id, Math.max(ticks, this.poison.get(s.id) ?? 0));
   }
   protected push(s: Shade, dir: [number, number], metres: number): void {
-    s.pos[0] += dir[0] * metres;
-    s.pos[2] += dir[1] * metres;
+    const nx = s.pos[0] + dir[0] * metres;
+    const nz = s.pos[2] + dir[1] * metres;
+    if (this.standable(nx, nz, s.pos[1] - C.shade_y)) {
+      s.pos[0] = nx;
+      s.pos[2] = nz;
+    }
     this.keepOutOfLanterns(s);
   }
   /** Hit a shade: takes `amount` ink, may dissolve it. Returns true when it dissolved. */
@@ -227,12 +231,17 @@ export abstract class KitBase {
     this.ink.delete(s.id);
     this.slows.delete(s.id);
     this.poison.delete(s.id);
-    this.sim.motes.push({ id: `X${this.extraMote++}`, pos: [s.pos[0], 0, s.pos[2]] });
+    this.sim.motes.push({ id: `X${this.extraMote++}`, pos: [s.pos[0], s.pos[1] - C.shade_y, s.pos[2]], kind: "dropped", ttl: C.mote_ttl_ticks });
     this.sim.score += 30;
     out.push({ name: "dissolve", shade: s.id, msg: "An Ink Shade dissolved into a firefly" });
   }
   protected inkOf(s: Shade): number {
     return this.ink.get(s.id) ?? SHADE_INK;
+  }
+  /** Can Mây (or a shade pushed by a skill) stand at this spot: there is floor and it is not a wall? */
+  protected standable(x: number, z: number, y: number): boolean {
+    const t = topAt(this.sim.def, x, z);
+    return supportAt(this.sim.def, x, z, y, C.step_height + 1) !== null && (t === null || t <= y + C.step_height);
   }
   protected keepOutOfLanterns(s: Shade): void {
     for (const l of this.sim.lanterns) {

@@ -2,7 +2,7 @@
 // big stone-skinned form with a different Q/W/E and a ground-shaking R. Live mode only.
 // Skill structure follows the shape-shifting brawler archetype of MOBA games; names, art and numbers are my own.
 import { KitBase, dist2, xz, type Fx, type KitEvent, type KitFrame, type SkillInfo, type SlotHud, type Style } from "./kit";
-import { DT, CONSTANTS as C } from "../sim/tuning";
+import { DT } from "../sim/tuning";
 
 export const CUB = {
   rageMax: 100,
@@ -197,12 +197,13 @@ export class CubKit extends KitBase {
     this.cd.e = this.cdTotal.e = CUB.e.cd;
     const to = this.aimPoint(f, CUB.e.range);
     const p = this.sim.player.pos;
-    const d = Math.hypot(to[0], to[1]);
-    const k = d > C.island_radius ? C.island_radius / d : 1;
-    p[0] = to[0] * k;
-    p[2] = to[1] * k;
-    this.sim.player.vy = 6; // a little hop for the eye
-    p[1] = 0.01;
+    if (this.standable(to[0], to[1], p[1])) {
+      p[0] = to[0];
+      p[2] = to[1];
+    }
+    this.sim.player.vel[1] = 6; // a little hop for the eye
+    this.sim.player.grounded = false;
+    p[1] += 0.01;
     const mega = this.mega;
     const r = mega ? CUB.e.megaLandR : CUB.e.landR;
     this.addFx({ kind: "disc", pos: [p[0], p[2]], r, color: mega ? 0xd9a05b : 0xf2d9a4, ttl: 25 });

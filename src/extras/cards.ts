@@ -223,7 +223,7 @@ export class CardKit extends KitBase {
     p[0] = l.pos[0] + (d > 1e-9 ? vx / d : 0) * KIT.r.arrive;
     p[2] = l.pos[2] + (d > 1e-9 ? vz / d : -1) * KIT.r.arrive;
     p[1] = 0;
-    this.sim.player.vy = 0;
+    this.sim.player.vel[1] = 0;
     this.cd.r = this.cdTotal.r = KIT.r.cd;
     this.addFx({ kind: "disc", pos: [p[0], p[2]], r: 3, color: 0xfff0b0, ttl: 30 });
     out.push({ name: "gate_done", lantern: l.id });

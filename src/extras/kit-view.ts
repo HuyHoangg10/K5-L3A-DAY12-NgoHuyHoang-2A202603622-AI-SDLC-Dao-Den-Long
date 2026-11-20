@@ -132,7 +132,7 @@ export class KitHud {
   constructor() {
     const style = document.createElement("style");
     style.textContent = `
-      #skills { position: fixed; bottom: 58px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+      #skills { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
       #skills .row { display: flex; gap: 10px; }
       #skills .sk { position: relative; width: 104px; height: 76px; border-radius: 14px; background: rgba(14,18,46,0.78); border: 2px solid rgba(255,199,102,0.5); overflow: hidden; text-align: center; }
       #skills .sk .k { position: absolute; top: 3px; left: 7px; font-size: 14px; color: #ffc766; font-weight: bold; }
@@ -167,12 +167,16 @@ export class KitHud {
     document.body.appendChild(this.root);
   }
 
+  private shown = false;
   setVisible(v: boolean): void {
+    this.shown = v;
     this.root.style.display = v ? "flex" : "none";
   }
 
   update(kit: KitBase): void {
-    for (const s of kit.slots()) this.slot(s);
+    const slots = kit.slots();
+    this.root.style.display = this.shown && slots.length ? "flex" : "none"; // the default character has no skills
+    for (const s of slots) this.slot(s);
     this.meter.style.display = kit.bar ? "block" : "none";
     if (kit.bar) {
       this.meterFill.style.width = `${Math.round(kit.bar.value * 100)}%`;

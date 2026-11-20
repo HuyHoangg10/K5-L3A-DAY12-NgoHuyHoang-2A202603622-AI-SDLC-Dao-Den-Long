@@ -6,42 +6,62 @@
     <title>Lantern Island - Dao Den Long</title>
     <style>
       :root {
-        --ink: #0b0f26;
-        --panel: rgba(14, 18, 46, 0.72);
-        --gold: #ffc766;
-        --amber: #ff9a3c;
-        --text: #fbeed2;
-        --violet: #a56bff;
+        --ink: #0e1430;
+        --panel: rgba(14, 20, 48, 0.74);
+        --gold: #f2c14e;
+        --amber: #ffb347;
+        --text: #f5f1e6;
+        --danger: #ff5a5f;
       }
+      body.cb { --danger: #ffffff; }
       * { box-sizing: border-box; }
       html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden; font-family: "Trebuchet MS", system-ui, sans-serif; color: var(--text); }
       #stage { position: fixed; inset: 0; }
       #stage canvas { display: block; width: 100%; height: 100%; }
-      #hud { position: fixed; top: 14px; left: 14px; display: grid; gap: 8px; pointer-events: none; min-width: 210px; }
-      .panel { background: var(--panel); border: 1px solid rgba(255, 199, 102, 0.28); border-radius: 12px; padding: 8px 12px; backdrop-filter: blur(4px); }
+      .panel { background: var(--panel); border: 1px solid rgba(242, 193, 78, 0.3); border-radius: 12px; padding: 8px 12px; backdrop-filter: blur(4px); }
+      .hud { position: fixed; pointer-events: none; }
+      #hud-left { top: 14px; left: 14px; }
+      #hud-top { top: 14px; left: 50%; transform: translateX(-50%); font-size: 26px; font-weight: bold; font-variant-numeric: tabular-nums; padding: 4px 22px; }
+      #hud-top.low { color: var(--danger); animation: blink 1s steps(2) infinite; }
+      @keyframes blink { 50% { opacity: 0.35; } }
+      #hud-right { top: 14px; right: 14px; text-align: right; min-width: 170px; }
+      #hud-bottom { bottom: 12px; left: 50%; transform: translateX(-50%); text-align: center; }
+      #hud-cd { bottom: 14px; right: 14px; display: flex; gap: 10px; }
       .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 15px; line-height: 1.7; }
       .row b { color: var(--gold); font-variant-numeric: tabular-nums; }
-      .flames { letter-spacing: 3px; color: var(--amber); text-shadow: 0 0 8px rgba(255, 154, 60, 0.8); }
+      .flames { letter-spacing: 3px; color: var(--amber); text-shadow: 0 0 8px rgba(255, 179, 71, 0.8); }
       .flames .out { color: #4b3f55; text-shadow: none; }
-      .bar { height: 6px; background: rgba(255, 255, 255, 0.12); border-radius: 4px; overflow: hidden; margin-top: 2px; }
-      .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--amber), var(--gold)); }
-      #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 20px; background: var(--panel); border: 1px solid rgba(255, 199, 102, 0.35); opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+      .cells { display: flex; gap: 4px; justify-content: center; margin-bottom: 4px; }
+      .cells i { width: 22px; height: 12px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); }
+      .cells i.on { background: linear-gradient(180deg, #fff6c2, var(--amber)); box-shadow: 0 0 6px rgba(255, 229, 138, 0.8); }
+      .cd { position: relative; width: 58px; height: 58px; border-radius: 12px; background: var(--panel); border: 2px solid rgba(242, 193, 78, 0.5); overflow: hidden; text-align: center; font-size: 12px; padding-top: 6px; }
+      .cd .f { position: absolute; left: 0; bottom: 0; width: 100%; background: rgba(5, 6, 20, 0.7); }
+      .cd.ready { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 179, 71, 0.6); }
+      .cd.off { opacity: 0.5; }
+      .cd span { position: relative; display: block; }
+      #hint { position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%); padding: 6px 16px; font-size: 15px; display: none; pointer-events: none; color: var(--gold); }
+      #arrow { position: fixed; width: 36px; height: 36px; margin: -18px 0 0 -18px; display: none; pointer-events: none; font-size: 30px; color: var(--amber); text-shadow: 0 0 8px rgba(255, 179, 71, 0.9); text-align: center; line-height: 36px; }
+      #wind { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: none; padding: 4px 14px; pointer-events: none; font-size: 14px; }
+      #toast { position: fixed; top: 108px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 20px; background: var(--panel); border: 1px solid rgba(242, 193, 78, 0.35); opacity: 0; transition: opacity 0.25s; pointer-events: none; }
       #toast.show { opacity: 1; }
-      #hint { position: fixed; bottom: 10px; width: max-content; max-width: 96vw; left: 50%; transform: translateX(-50%); font-size: 13px; opacity: 0.8; background: var(--panel); border-radius: 10px; padding: 6px 14px; pointer-events: none; text-align: center; }
+      #help { position: fixed; bottom: 10px; left: 12px; font-size: 12px; opacity: 0.75; max-width: 34vw; pointer-events: none; }
       #flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(80, 20, 130, 0) 40%, rgba(90, 30, 150, 0.55) 100%); opacity: 0; transition: opacity 0.4s; }
       #flash.on { opacity: 1; transition: none; }
-      .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(6, 8, 24, 0.62); text-align: center; }
+      .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(6, 8, 24, 0.66); text-align: center; z-index: 5; }
       .overlay.show { display: grid; }
-      .card { max-width: 460px; padding: 26px 32px; background: rgba(16, 20, 52, 0.92); border: 1px solid rgba(255, 199, 102, 0.4); border-radius: 18px; box-shadow: 0 0 40px rgba(255, 154, 60, 0.18); }
-      .card.wide { max-width: 760px; }
-      .card .small { font-size: 12.5px; opacity: 0.85; }
+      .card { max-width: 480px; padding: 26px 32px; background: rgba(16, 22, 56, 0.94); border: 1px solid rgba(242, 193, 78, 0.45); border-radius: 18px; box-shadow: 0 0 40px rgba(255, 179, 71, 0.18); }
+      .card.wide { max-width: 900px; }
       .card h1 { margin: 0 0 6px; font-size: 28px; color: var(--gold); }
       .card p { margin: 8px 0; line-height: 1.5; }
+      .card .small { font-size: 12.5px; opacity: 0.85; }
       .card .score { font-size: 22px; color: var(--gold); }
       .card table { margin: 10px auto; border-collapse: collapse; font-size: 14px; }
       .card td { padding: 2px 10px; text-align: left; }
       .card td:last-child { text-align: right; color: var(--gold); font-variant-numeric: tabular-nums; }
-      button { margin-top: 12px; font: inherit; font-size: 16px; padding: 9px 22px; border-radius: 22px; border: 0; cursor: pointer; background: linear-gradient(180deg, var(--gold), var(--amber)); color: #2b1600; }
+      .card label { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin: 12px 0; }
+      .card .quote { font-style: italic; color: #ffe9b0; }
+      button { margin: 8px 4px 0; font: inherit; font-size: 16px; padding: 9px 22px; border-radius: 22px; border: 0; cursor: pointer; background: linear-gradient(180deg, var(--gold), var(--amber)); color: #2b1600; }
+      button.ghost { background: rgba(255, 255, 255, 0.12); color: var(--text); }
       button:hover { filter: brightness(1.08); }
       kbd { background: rgba(255, 255, 255, 0.14); border-radius: 4px; padding: 0 5px; font-family: inherit; }
     </style>
@@ -49,26 +69,66 @@
   <body>
     <div id="stage"></div>
     <div id="flash"></div>
-    <div id="hud">
-      <div class="panel">
-        <div class="row"><span>Flames</span><span class="flames" id="hud-flames"></span></div>
-        <div class="row"><span>Fireflies</span><b id="hud-carried">0 / 10</b></div>
-        <div class="row"><span>Lanterns lit</span><b id="hud-lit">0 / 5</b></div>
-        <div class="row"><span>Score</span><b id="hud-score">0</b></div>
-        <div class="row"><span>Until dawn</span><b id="hud-time">4:00</b></div>
-        <div class="row"><span>Glow</span><span style="flex: 1"><div class="bar"><i id="hud-glow"></i></div></span></div>
-      </div>
+    <div class="hud panel" id="hud-left">
+      <div class="row"><span>Flames</span><span class="flames" id="hud-flames"></span></div>
+      <div class="row"><span>Night</span><b id="hud-night">1 / 3</b></div>
     </div>
+    <div class="hud panel" id="hud-top">5:00</div>
+    <div class="hud panel" id="hud-right">
+      <div class="row"><span>Lanterns</span><b id="hud-lit">0 / 5</b></div>
+      <div class="row"><span>Score</span><b id="hud-score">0</b></div>
+    </div>
+    <div class="hud panel" id="hud-bottom">
+      <div class="cells" id="hud-cells"></div>
+      <div class="row" style="justify-content: center"><span>Fireflies&nbsp;</span><b id="hud-carried">0 / 10</b></div>
+    </div>
+    <div class="hud" id="hud-cd">
+      <div class="cd" id="cd-dash"><div class="f"></div><span>Dash</span><span><kbd>Shift</kbd></span></div>
+      <div class="cd" id="cd-pulse"><div class="f"></div><span>Glow</span><span id="cd-pulse-key"><kbd>Q</kbd></span></div>
+    </div>
+    <div class="panel" id="hint"></div>
+    <div id="arrow">&#10148;</div>
+    <div class="panel" id="wind"></div>
     <div id="toast"></div>
-    <div id="hint"><kbd>Right-click</kbd> walk &middot; <kbd>Space</kbd> jump &middot; <kbd>F</kbd> put fireflies in a lantern &middot; <kbd>D</kbd> glow &middot; <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> champion skills (aim with the mouse) &middot; drag left/middle mouse to turn the camera &middot; <kbd>Enter</kbd> play again &middot; <kbd>Esc</kbd> change champion</div>
+    <div id="help"></div>
+
     <div class="overlay show" id="start">
       <div class="card wide">
         <h1>Lantern Island</h1>
-        <p>Dark mist has swallowed the lights of the island. You are the youngest lamp keeper. Gather fireflies, light the five big lanterns before dawn, and keep away from the Ink Shades.</p>
-        <p><b>Pick your champion</b> (click, press 1 / 2 / 3, or use <kbd>&larr;</kbd> <kbd>&rarr;</kbd>), then press <kbd>Enter</kbd>:</p>
+        <p>Dark mist has swallowed the lights of the island chain. You are the youngest lamp keeper. Gather fireflies, light the lanterns before dawn, and keep away from the Ink Shades. Three nights, three islands.</p>
+        <p><b>Pick your character</b> (click, press 1 - 4, or use <kbd>&larr;</kbd> <kbd>&rarr;</kbd>), then press <kbd>Enter</kbd>:</p>
         <div id="champs"></div>
-        <p class="small"><kbd>Right-click</kbd> walk &middot; drag with <kbd>left</kbd> or <kbd>middle</kbd> mouse to turn the camera &middot; <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> skills aim at the mouse</p>
-        <button id="start-btn">Begin the night (Enter)</button>
+        <p class="small"><kbd>Right-click</kbd> walk &middot; <kbd>Space</kbd> jump &middot; <kbd>Shift</kbd> dash &middot; drag with left or middle mouse to turn the camera &middot; <kbd>Esc</kbd> / <kbd>P</kbd> pause</p>
+        <button id="start-btn">Begin (Enter)</button>
+        <button class="ghost" id="start-settings">Settings</button>
+      </div>
+    </div>
+    <div class="overlay" id="intro">
+      <div class="card">
+        <p class="small" id="intro-night"></p>
+        <h1 id="intro-title"></h1>
+        <p id="intro-text"></p>
+        <p class="quote" id="intro-quote"></p>
+        <button id="intro-btn">Light the night (Enter)</button>
+      </div>
+    </div>
+    <div class="overlay" id="pause">
+      <div class="card">
+        <h1>Paused</h1>
+        <button id="pause-resume">Resume (Esc)</button><br />
+        <button class="ghost" id="pause-restart">Restart night</button>
+        <button class="ghost" id="pause-settings">Settings</button>
+        <button class="ghost" id="pause-menu">Back to menu</button>
+      </div>
+    </div>
+    <div class="overlay" id="settings">
+      <div class="card">
+        <h1>Settings</h1>
+        <label>Volume <input id="set-volume" type="range" min="0" max="1" step="0.05" /></label>
+        <label>Mouse sensitivity <input id="set-sens" type="range" min="0.3" max="2" step="0.1" /></label>
+        <label>Easy-to-tell-apart colours <input id="set-cb" type="checkbox" /></label>
+        <p class="small">Saved on this computer.</p>
+        <button id="set-close">Back</button>
       </div>
     </div>
     <div class="overlay" id="end">
@@ -77,7 +137,8 @@
         <p id="end-text"></p>
         <p class="score">Score <span id="end-score"></span></p>
         <table id="end-table"></table>
-        <button id="end-btn">Play again (Enter)</button> <button id="change-btn">Change champion (Esc)</button>
+        <button id="end-btn">Continue (Enter)</button>
+        <button class="ghost" id="change-btn">Menu (Esc)</button>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

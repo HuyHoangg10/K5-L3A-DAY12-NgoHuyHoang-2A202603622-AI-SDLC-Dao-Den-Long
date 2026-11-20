@@ -1,9 +1,9 @@
 import { CHAMPIONS, championById } from "./champions";
 import type { SkillInfo } from "./kit";
 
-/** Champion pick screen: three cards in the start overlay. Click one or press 1 / 2 / 3. */
+/** Champion pick screen: three cards in the start overlay. Click one or press 1 / 2 / 3 / 4. */
 export class ChampionSelect {
-  selected = CHAMPIONS[0]?.id ?? "cards";
+  selected = CHAMPIONS[0]?.id ?? "default";
   private els = new Map<string, HTMLElement>();
 
   constructor(private host: HTMLElement, private onPick: (id: string) => void = () => {}) {
@@ -57,6 +57,10 @@ export class ChampionSelect {
 
 // Short skill lists for the pick screen (the full descriptions are in each kit and in the README).
 const STATIC_SKILLS: Record<string, SkillInfo[]> = {
+  default: [
+    { key: "q", name: "Q glow, E lantern", desc: "" },
+    { key: "w", name: "Shift dash, Space jump", desc: "" },
+  ],
   cards: [
     { key: "q", name: "Card Fan", desc: "" },
     { key: "w", name: "Roll the Card", desc: "" },
