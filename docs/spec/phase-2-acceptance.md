@@ -1,0 +1,16 @@
+# Phase 2: acceptance criteria for each item of part 3
+
+How each item is checked: **H** = headless scenario + test + evidence row (automatic), **M** = checked by hand in the browser (not automatic; the status column says what I actually did).
+
+| # | item | acceptance criteria | check | status |
+|---|---|---|---|---|
+| 1 | Gió Lạc | idle drifts 2 m/s; chase only with >= 5 fireflies within 15 m; touch within 1.2 m steals min(3, carried) once, event `drifter_steal`; flee 7 m/s for 240 ticks then gone; pulse on chase = flee without stealing; pulse on loaded flee = `drifter_drop` and 3 dropped fireflies; no flame lost; spawns at ticks 1200, 2400..., max 2, nights 2 and 3 only | H: `drifter_steal`, `drifter_pulse`; tests/maps.test.ts "Gió Lạc"; evidence P2-18 | done |
+| 2 | Bùa Gió | picked like a firefly (XZ <= 1 m, height <= 1.5 m); `charm_picked {charm_id, charm_ticks: 600}`; speed 7.2 m/s for 600 ticks; dash cooldown stays 0 but needs a new press; reappears after 2700 ticks (`respawn_s` 45 in the snapshot); positions as the standard map | H: `night2_charm`; tests; evidence P2-15 | done (night 3 positions covered by map geometry test) |
+| 3 | Chain of 3 nights | menu -> intro (island name + Ông Đăng line) -> play -> result -> next night; win on night 3 shows Dawn with the total; a loss repeats the night | M (`src/render/game.ts`) | played the flow with the in-app browser (menu, intro, night 1 start, night 2 and 3 scenery). I did not play all three nights through to the Dawn screen |
+| 4 | Pause | Esc/P stops the logic (sim_tick, time, cooldowns, spawns, TTL); snapshot state `paused`; menu with Resume / Restart / Settings / Menu | H for the logic (`pause` scenario, tests); M for the menu | logic done; menu built, not clicked through |
+| 5 | Settings | volume and mouse sensitivity change live and are saved (localStorage) between sessions; a blocked storage must not break the game | M (`src/render/settings.ts`) | built, not verified by hand |
+| 6 | Sound | music plus effects for pickup, light, pulse, hit, jump, dash, win, lose, shade spawn, countdown 10 s; volume setting applies; silent but working where WebAudio is missing | M (`src/render/audio.ts`) | built, not listened to (the review environment has no audio) |
+| 7 | Full HUD | everything listed in the ticket is on screen: flames, mm:ss (red + blink <= 30 s), lanterns k/n, score, 10-cell bar, dash and pulse icons, hint "put light in the lantern (x/10)", arrow to the nearest unlit lantern when off screen | M (`src/render/hud.ts`) | seen in screenshots: flames, night, clock, lanterns, score, bar, two cooldown icons, arrow. The red blink and the near-lantern hint not seen |
+| 8 | Standard palette | the listed parts use the listed colours (max 10% per channel); ambient light = 0.15 + 0.55 * lit/total | M (`PAL` in `src/render/view.ts`, ambient in `View.update`) | colours coded as listed; not measured in screenshots |
+| 9 | Standard maps and numbers | tuning equals the standard numbers; maps as in part 2 | H: tests/maps.test.ts, tests/io.test.ts "contract"; evidence P2-13..P2-17, P2-24 | done |
+| 10 | Frame rate | average >= 30 FPS at 1280x720 for the windowed build | M | the in-app browser ran at about 30 fps in an earlier check (46 frames in 1.5 s) on this machine; not measured with a proper tool for the three nights |

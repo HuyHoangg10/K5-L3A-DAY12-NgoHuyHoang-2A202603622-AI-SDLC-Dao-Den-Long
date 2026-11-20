@@ -30,6 +30,36 @@ One table per phase. "Checked by" points to a test (tests/…) or an evidence re
 | A-22 | Pickup when several motes are in range | All of them are taken in the same tick (one `mote_picked` event each, `carried` going up by 1) until `carry_capacity` is reached. | | tests/edges.test.ts |
 | A-23 | Scenario `player.pos` outside the island or above ground | Outside the 50 m wall the player is pulled back onto the circle on the first step. Above ground (y > 0) the player falls with gravity. | Only matters for odd scenarios. | not tested, noted as a risk |
 
+## Phase 2 (contract v1.1, Ticket-02)
+
+The standard numbers replace my own Phase 1 numbers (the old table above is what `phase-1` shipped). Where the ticket is silent I chose, and the choice is here.
+
+| id | unclear point | assumption | effect | checked by |
+|---|---|---|---|---|
+| P2-1 | "reach full speed or stop in <= 0.1 s" | Velocity moves toward the target by 1 m/s per tick (60 m/s²): exactly 6 ticks to 6 m/s. After 60 ticks of running Mây has gone 5.75 m, not 6. | Hidden tests that expect 6 m after 60 ticks would be off by 0.25 m | rules.test.ts "movement" |
+| P2-2 | Order of velocity and position in a tick | velocity is updated first, then the position moves by the new velocity x 1/60 | | same |
+| P2-3 | Pulse/stun/invulnerability tick counts | Counters are set to their full value on the tick of the event and decremented at the start of every later tick (step 2). So a 120-tick stun shows `stunned` in snapshots 1..120 after a pulse at tick 1... and invulnerability 90 ticks covers the hit tick and the 89 after it. | Off-by-one risk against the reference | rules.test.ts |
+| P2-4 | Recoil distance | 2 m in total over the 59 ticks after the hit (the hit tick itself does not move the shade) | | rules.test.ts |
+| P2-5 | `spawning` state length | not given: 60 ticks, the shade neither moves nor hurts and the renderer grows it from small | | maps/rules tests |
+| P2-6 | Default scenario shade state | `wander`; it becomes `chase` on the first tick if Mây is within 12 m | A Phase 1 hidden test that puts a shade 10 m away still sees it chase at once | rules.test.ts |
+| P2-7 | Wander target | the nearest unlit lantern in XZ, stops 0.5 m before it; nothing to walk to = stands still | | |
+| P2-8 | Shades and terrain | they walk straight toward the target, stop at cliffs, towers and the end of the floor (no walking over air), follow ramps. A shade on floor 0 cannot touch Mây on floor 1/2 because of the 1.5 m height rule | Shades get stuck at the bridge side or cliff foot | maps.test.ts |
+| P2-9 | Dropped fireflies ring | 1.5-2.5 m with a seeded random angle and radius (own random stream); if the spot is not standable the firefly lands at Mây's feet | | rules.test.ts |
+| P2-10 | Night 3 start point | the ticket text I read gives none; (0,0,0) is inside floor 2's pillar, so I use (0,0,-30) on floor 0. Night 2 starts at (0,0,0) | Hidden night-3 scenarios that rely on another start would differ | maps.test.ts |
+| P2-11 | Mist points for Gió Lạc | not given: 12 points on a ring over the clouds (night 2: radius 60 around (35,0,0); night 3: radius 52 around the centre), height 2 m | | |
+| P2-12 | Drifter movement | idle: changes its seeded random heading every 120 ticks; chase: straight at Mây; flee: away along the direction at the moment it started fleeing | | maps.test.ts |
+| P2-13 | Pulse on a loaded fleeing drifter | the 3 stolen fireflies become dropped fireflies (480 ticks) around its position, `fleeTicks` is capped at 120 | | maps.test.ts |
+| P2-14 | Wind schedule | first gust at tick 1800 (30 s), lasting 300 ticks, every 1800 ticks after; the direction is drawn from its own seeded stream 120 ticks before the gust; `wind.dir_deg` keeps the last chosen value, 0 before the first draw. Push = 2 m/s added to the movement and blocked by walls; it can push Mây off an edge | | maps.test.ts |
+| P2-15 | `invuln` and `grounded` in the snapshot | booleans (the ticket names `invuln` without a unit); `vel` is `[x,y,z]` in m/s; `dash_cd_s`, `pulse_cd_s`, `charm_s` in seconds | | io.test.ts |
+| P2-16 | `night_start` | emitted once, as the first event of the run, with `tick` 1 | | io.test.ts |
+| P2-17 | Pause semantics | `pause` toggles on a false->true edge; the pause tick emits `paused` and stops the step; the resume tick emits `resumed` and then runs normally. `--ticks N` counts paused steps too | | rules.test.ts "pause" |
+| P2-18 | Bounce pads | trigger when the feet are within the pad radius and not more than 0.2 m above it, not while launched or dashing; the horizontal velocity is locked until landing, a dash replaces it for 12 ticks, then it comes back | | maps.test.ts |
+| P2-19 | Cliffs and ramps | a step up of more than 0.35 m is a wall (slide along it); ramps rise at 0.5 m per metre so they can be walked; the tower is solid up to 14 m; jumping does not clear a 3 m floor | | maps.test.ts |
+| P2-20 | Score at pickup | picking up gives no points any more; the +10 is paid when fireflies are deposited | | rules.test.ts |
+| P2-21 | `fall_enabled` | `true`: there is no wall at the island edge any more (Phase 1 had one at 50 m) | | rules.test.ts |
+| P2-22 | Safe zone at a lantern that is lit by the scenario | shades inside are not pushed (nothing "just lit"); they are simply held at the rim from their next move | | |
+| P2-23 | Ordering of events at the same tick | in step order: dash, charm_picked/mote_picked, deposit, lantern_lit, pulse, drifter_steal, player_hit, shade_spawned, game_over | | |
+
 ## Creative additions (champions, ship with phase 2)
 
 | id | unclear point | assumption | effect | checked by |
