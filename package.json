@@ -1,0 +1,35 @@
+{
+  "name": "dao-den-long",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dao Den Long (Lantern Island): a small 3D lantern-lighting game. Pure TypeScript sim, Three.js render.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ngo Huy Hoang",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:headless": "node scripts/build-headless.mjs",
+    "build:web": "vite build",
+    "build": "npm run build:headless && npm run build:web",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build:headless && vitest run",
+    "headless": "node dist/headless/cli.js",
+    "evidence": "node scripts/evidence.mjs",
+    "determinism": "node scripts/determinism.mjs",
+    "check": "npm run typecheck && npm test && npm run determinism"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}
