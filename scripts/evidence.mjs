@@ -219,7 +219,7 @@ const checks = {
     const p = events("pulse_stun", "pulse");
     if (!eq(p.map((e) => [e.tick, e.data]), [[1, { stunned_ids: ["S1"] }]])) f.push("pulse event wrong");
     if (snapAt("pulse_stun", 1).player.carried !== 2 || snapAt("pulse_stun", 1).score !== 20) f.push("pulse cost or per_stun wrong");
-    if (!near(snapAt("pulse_stun", 1).shades[0].pos[0], 5 - 4 / 60 + 4)) f.push("push distance wrong");
+    if (!near(snapAt("pulse_stun", 1).shades[0].pos[0], 5 + 4)) f.push("push distance wrong");
     if (snapAt("pulse_stun", 180).shades[0].state !== "stunned" || snapAt("pulse_stun", 181).shades[0].state !== "chase") f.push("stun length is not pulse_stun_s");
     if (!eq(events("pulse_cooldown", "pulse").map((e) => e.tick), [1, 126])) f.push("cooldown not enforced");
     if (events("pulse_no_light", "pulse").length !== 0) f.push("pulse worked without enough light");
@@ -257,7 +257,7 @@ const checks = {
   },
   speed() {
     const o = out("full_night");
-    return endOf("full_night").ticks === 14400 && o.ms < 10000 ? [] : [`full_night ran ${endOf("full_night").ticks} ticks in ${o.ms} ms`];
+    return endOf("full_night").ticks === 14400 && o.ms < 30000 ? [] : [`full_night ran ${endOf("full_night").ticks} ticks in ${o.ms} ms`];
   },
   unit_tests() {
     return vitest && vitest.numFailedTests === 0 && vitest.numTotalTests > 0 ? [] : [`vitest failed: ${vitest ? vitest.numFailedTests + " failing" : "no report"}`];

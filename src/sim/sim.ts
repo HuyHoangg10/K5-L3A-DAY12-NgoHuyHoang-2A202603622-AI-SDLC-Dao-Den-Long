@@ -5,7 +5,8 @@ import type { FrameInput, InputFrame, Lantern, Mote, Scenario, Shade, SimEvent, 
 
 const EPS = C.eps;
 const dist2d = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
-const stunTicks = Math.round(T.pulse_stun_s * C.tick_rate);
+// +1 because the pulse step itself also runs updateShades, which burns one stun tick
+const stunTicks = Math.round(T.pulse_stun_s * C.tick_rate) + 1;
 const invulnTicks = Math.round(T.invuln_s * C.tick_rate);
 const cooldownTicks = Math.round(T.pulse_cooldown_s * C.tick_rate);
 
@@ -16,7 +17,7 @@ export interface SimOptions {
 
 /**
  * Fixed-step game logic. One call to step() is one 1/60 s tick.
- * Step order: input -> move/jump -> interact -> shades spawn+move -> pulse -> pickup -> hit -> end checks.
+ * Step order: input -> move/jump -> interact -> pulse -> shades spawn+move -> pickup -> hit -> end checks.
  * No Date, no Math.random, no DOM: same seed + scenario + inputs gives the same run.
  */
 export class Sim {
@@ -166,9 +167,9 @@ export class Sim {
       this.finish("won", "all_lit");
       return true;
     }
-    this.updateShades();
     if (this.cooldown > 0) this.cooldown--;
-    if (pulseEdge) this.pulse();
+    if (pulseEdge) this.pulse(); // acts on the shade positions of the previous snapshot, then shades move
+    this.updateShades();
     this.pickup();
     this.hitCheck();
 

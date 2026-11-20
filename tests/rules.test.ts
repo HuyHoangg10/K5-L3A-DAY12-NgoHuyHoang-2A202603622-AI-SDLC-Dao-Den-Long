@@ -66,7 +66,7 @@ describe("movement", () => {
 });
 
 describe("motes", () => {
-  it("pickup is blocked at carry_capacity and takes one mote per step when below it", () => {
+  it("pickup stops at carry_capacity: with carried 9 and two motes in range only one is taken", () => {
     const r = runNamed("capacity");
     expect(r.eventsNamed("mote_picked")).toHaveLength(1);
     expect(r.snapAt(10).player.carried).toBe(T.carry_capacity);
@@ -191,9 +191,9 @@ describe("pulse", () => {
     expect(r.snapAt(1).score).toBe(T.score.per_stun);
     expect(r.snapAt(1).shades[1].state).toBe("chase");
   });
-  it("pushes the stunned shade pulse_push_m away from the player", () => {
-    // S1 starts 5 m away, moves 4/60 toward the player in the same step, then is pushed 4 m
-    expect(r.snapAt(1).shades[0].pos[0]).toBeCloseTo(5 - T.shade_speed / 60 + T.pulse_push_m, 3);
+  it("pushes the stunned shade exactly pulse_push_m away from where it was in the previous snapshot", () => {
+    expect(r.snapAt(0).shades[0].pos).toEqual([5, 1, 0]);
+    expect(r.snapAt(1).shades[0].pos).toEqual([5 + T.pulse_push_m, 1, 0]);
   });
   it("a stunned shade is reported as stunned and does not move for exactly pulse_stun_s", () => {
     const x1 = r.snapAt(1).shades[0].pos[0];
@@ -203,13 +203,16 @@ describe("pulse", () => {
     expect(r.snapAt(181).shades[0].pos[0]).toBe(x1);
     expect(r.snapAt(182).shades[0].pos[0]).toBeLessThan(x1);
   });
-  it("a stunned shade cannot hit the player", () => {
+  it("a stunned shade cannot hit the player, even when the player walks into it", () => {
+    // pulse pushes S1 from x=0.5 to x=4.5; the player then walks +X and stands within hit radius of it while it is stunned
     const hit = runInline({
-      ticks: 5,
+      ticks: 120,
       scenario: { random_motes: false, random_shades: false, player: { carried: 4 }, shades: [{ id: "S1", pos: [0.5, 1, 0] }] },
-      frames: [{ tick: 0, pulse: true }],
+      frames: [{ tick: 0, pulse: true }, { tick: 1, pulse: false, move: [1, 0] }, { tick: 40, move: [0, 0] }],
     });
     expect(hit.eventsNamed("pulse")[0]?.data).toEqual({ stunned_ids: ["S1"] });
+    expect(Math.hypot(hit.snapAt(120).player.pos[0] - hit.snapAt(120).shades[0].pos[0], hit.snapAt(120).player.pos[2])).toBeLessThan(T.shade_hit_radius);
+    expect(hit.snapAt(120).shades[0].state).toBe("stunned");
     expect(hit.eventsNamed("player_hit")).toHaveLength(0);
   });
   it("needs pulse_cost motes: with fewer the pulse does nothing", () => {
