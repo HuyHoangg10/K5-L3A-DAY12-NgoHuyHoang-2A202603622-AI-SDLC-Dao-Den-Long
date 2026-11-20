@@ -9,6 +9,7 @@ if (q.has("bench")) {
   new Bench(host, Number(q.get("seed") ?? 42), Number(q.get("duration") ?? 30));
 } else {
   const game = new Game(host);
+  if (q.has("demo")) game.startDemo(); // README screenshots
   // dev-only handle for poking at the game from the browser console
   if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game;
 }

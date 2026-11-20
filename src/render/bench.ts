@@ -35,6 +35,7 @@ export class Bench {
       if (el) el.style.display = "none";
     }
     this.view = new View(host);
+    if (new URLSearchParams(window.location.search).get("aura") === "0") this.view.setShadeAura(false); // diagnostics: not used by the official run
     this.view.fixedSize = [1280, 720];
     this.view.resize();
     const rng = new Rng(seed);

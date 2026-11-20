@@ -55,6 +55,8 @@
       .cd span { position: relative; display: block; }
       #hint { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); padding: 6px 16px; display: none; pointer-events: none; color: var(--gold); }
       #arrow { position: fixed; width: 36px; height: 36px; margin: -18px 0 0 -18px; display: none; pointer-events: none; font-size: 30px; color: var(--amber); text-shadow: 0 0 8px rgba(255, 179, 71, 0.9); text-align: center; line-height: 36px; }
+      #marks .mark { position: fixed; width: 44px; height: 44px; margin: -22px 0 0 -22px; pointer-events: none; font-size: 34px; line-height: 44px; text-align: center; color: #fff; text-shadow: 0 0 6px #000, 0 0 12px var(--danger); }
+      #marks .mark small { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); font-size: 18px; white-space: nowrap; }
       #wind { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: none; padding: 4px 14px; pointer-events: none; }
       #toast { position: fixed; top: 112px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 20px; background: var(--panel); border: 1px solid rgba(242, 193, 78, 0.35); opacity: 0; transition: opacity 0.25s; pointer-events: none; max-width: 70vw; text-align: center; }
       #toast.show { opacity: 1; }
@@ -119,6 +121,7 @@
     <div id="arrow">&#10148;</div>
     <div class="panel" id="wind"></div>
     <div id="toast"></div>
+    <div id="marks"></div>
     <div id="cues"></div>
     <div id="help"></div>
 

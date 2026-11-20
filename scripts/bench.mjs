@@ -101,7 +101,7 @@ const chromeArgs = [
   "--disable-renderer-backgrounding",
   "--disable-backgrounding-occluded-windows",
   ...(headed ? [] : ["--headless=new"]),
-  `http://127.0.0.1:${port}/?bench=1&seed=${seed}&duration=${duration}`,
+  `http://127.0.0.1:${port}/?bench=1&seed=${seed}&duration=${duration}${opt("--extra", "")}`,
 ];
 const child = spawn(browser, chromeArgs, { stdio: "ignore" });
 child.on("error", (e) => fail(`could not start ${browser}: ${e.message}`));

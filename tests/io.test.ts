@@ -275,12 +275,15 @@ describe("contract", () => {
     expect(contract.tuning).toEqual(TUNING);
   });
   it("header fields", () => {
-    expect(contract.contract_version).toBe("1.2");
+    expect(contract.contract_version).toBe("1.3");
     expect(contract.team).toBe("2A202603622-NgoHuyHoang");
     expect(contract.headless_cmd).toBe("node dist/headless/cli.js");
+    expect(contract.run_cmd).toBe("node dist/headless/launcher.js"); // takes --export-leaderboard
+    expect(contract.bench_cmd).toBe("node scripts/bench.mjs"); // takes --seed --duration --out
+    expect(contract.soak_cmd).toBe("node --expose-gc dist/headless/soak.js"); // takes --seed --nights --out
     expect(contract.build_cmd).toContain("npm run build");
   });
-  it("has every key of contracts v1.0 and v1.1 plus the v1.2 ones", () => {
+  it("has every tuning key of contracts v1.0 to v1.2 (v1.3 adds commands, not numbers)", () => {
     expect(Object.keys(contract.tuning).sort()).toEqual(
       [
         "player_speed", "carry_capacity", "lantern_cost", "lantern_count_night1", "pickup_radius", "interact_radius",

@@ -2,6 +2,13 @@
 
 Breaking changes (things that behave differently from the previous tag) are marked **BREAKING**.
 
+## phase-4 (contract v1.3, Ticket-04, release v1.0.0)
+
+- **BREAKING (commands only)** `run_cmd` is now `node dist/headless/launcher.js` (was `npm run dev`); it serves the built game, keeps the leaderboard on disk and takes `--export-leaderboard out.json`. `game.contract.json` is v1.3 and adds `bench_cmd` (`node scripts/bench.mjs`) and `soak_cmd` (`node --expose-gc dist/headless/soak.js`). No rule, number or headless output changed in this phase.
+- New: benchmark mode (`/?bench=1&seed=42&duration=30`, run by `npm run bench`, writes `bench.json`), soak test (`npm run soak`, writes `soak.json`), local leaderboard (name 3-12 characters, top 10, menu screen, export), key rebinding with duplicate warning and restore defaults, subtitles and edge arrows for important sounds and events, reduce motion, large text (x1.25), every UI text at least 18 px at 1280x720.
+- Changed in the live game only: shades and fireflies are drawn as instanced swarms (a few draw calls however many there are), fireflies glow without being dimmed by fog.
+- Docs: README (3 commands, requirements, settings, screenshots, bench, soak), CREDITS, retro, manual check notes.
+
 ## phase-3 (contract v1.2, Ticket-03)
 
 - **BREAKING** Lanterns have fuel: 100 when lit, -1 per second, 0 = the lantern goes out (`lantern_out`). Snapshot lanterns gain `fuel`, `ever_lit`, `relit_count`; the player gains `capacity`. `game.contract.json` is v1.2 with the new tuning keys (`fuel_max`, `fuel_decay_per_s`, `fuel_per_mote`, `relight_cost`, `win_ratio`, `drain_per_s`, `low_fuel_threshold`, `capacity_max`).

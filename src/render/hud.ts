@@ -28,6 +28,33 @@ export class Hud {
     this.setCapacity(T.carry_capacity);
   }
 
+  /**
+   * Arrows at the screen edge that point to things the player should notice (a shade that has just appeared).
+   * `items` are world points; an arrow stays in the list as long as the caller passes it.
+   */
+  updateMarks(items: { x: number; y: number; z: number; label: string }[], project: (x: number, y: number, z: number) => { x: number; y: number; ok: boolean }): void {
+    const host = $("marks");
+    while (host.children.length > items.length) host.lastElementChild?.remove();
+    while (host.children.length < items.length) host.appendChild(document.createElement("div")).className = "mark";
+    items.forEach((it, i) => {
+      const el = host.children[i] as HTMLElement;
+      const s = project(it.x, it.y, it.z);
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      let dx = s.x - cx;
+      let dy = s.y - cy;
+      if (!s.ok) {
+        dx = -dx;
+        dy = -dy;
+      }
+      const inside = s.ok && s.x > 30 && s.x < window.innerWidth - 30 && s.y > 30 && s.y < window.innerHeight - 30;
+      const k = inside ? 1 : Math.min((cx - 40) / Math.abs(dx || 1), (cy - 60) / Math.abs(dy || 1));
+      el.style.left = `${cx + dx * k}px`;
+      el.style.top = `${cy + dy * k}px`;
+      el.innerHTML = inside ? `&#9660;<small>${it.label}</small>` : `<span style="display:inline-block;transform:rotate(${Math.atan2(dy, dx)}rad)">&#10148;</span><small>${it.label}</small>`;
+    });
+  }
+
   private setCapacity(n: number): void {
     if (n === this.lastCapacity) return;
     this.lastCapacity = n;
@@ -124,7 +151,7 @@ export class Hud {
   }
 
   showHud(v: boolean): void {
-    for (const id of ["hud-left", "hud-top", "hud-right", "hud-lanterns", "hud-bottom", "hud-cd", "help"]) $(id).style.display = v ? "" : "none";
+    for (const id of ["hud-left", "hud-top", "hud-right", "hud-lanterns", "hud-bottom", "hud-cd", "help", "marks"]) $(id).style.display = v ? "" : "none";
     if (!v) {
       $("hint").style.display = "none";
       $("arrow").style.display = "none";

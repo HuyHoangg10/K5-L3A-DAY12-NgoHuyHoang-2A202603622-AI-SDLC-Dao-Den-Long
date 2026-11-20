@@ -50,6 +50,7 @@ export class Game {
   private saved = false;
   private lowSeen = new Set<string>();
   private windSeen = false;
+  private marks: { id: string; until: number }[] = []; // edge arrows for shades that just appeared
 
   constructor(host: HTMLElement) {
     this.view = new View(host);
@@ -62,6 +63,26 @@ export class Game {
     this.hud.showHud(false);
     this.kitHud.setVisible(false);
     requestAnimationFrame((t) => this.frame(t));
+  }
+
+  /** `?demo=1`: jump into night 1 with a few lanterns burning, for the README screenshots. Not part of normal play. */
+  startDemo(): void {
+    this.hud.show("start", false);
+    this.night = 1;
+    this.newSim();
+    const L = this.sim.lanterns;
+    const fuel = [82, 24, 100];
+    fuel.forEach((f, i) => {
+      L[i]!.lit = true;
+      L[i]!.everLit = true;
+      L[i]!.fuel60 = f * 60;
+    });
+    this.sim.player.pos[0] = L[1]!.pos[0] - 6;
+    this.sim.player.pos[2] = L[1]!.pos[2] - 8;
+    this.sim.player.carried = 6;
+    this.input.camYawDeg = 25;
+    this.hud.show("intro", false);
+    this.beginNight();
   }
 
   // ---- wiring ---------------------------------------------------------------------------------------
@@ -126,6 +147,7 @@ export class Game {
     this.lowSeen.clear();
     this.windSeen = false;
     this.saved = false;
+    this.marks = [];
     this.runSeed = seed;
     this.cues.clear();
   }
@@ -292,6 +314,7 @@ export class Game {
         if (sh) {
           const w = directionWord(P.pos[0], P.pos[2], sh.pos[0], sh.pos[2], this.input.camYawDeg);
           this.cues.say(`(low growl) An Ink Shade appeared ${w} ${arrowFor(w)}`, 3200, 400);
+          if (this.settings.subtitles) this.marks.push({ id: sh.id, until: performance.now() + 3500 });
         }
         break;
       }
@@ -388,6 +411,14 @@ export class Game {
     this.view.update(this.sim, dt, this.input.camYawDeg);
     this.kitView.update(this.kit, this.sim, this.time);
     this.kitHud.update(this.kit);
+    const nowMs = performance.now();
+    this.marks = this.marks.filter((m) => m.until > nowMs);
+    const markPts = this.marks.flatMap((m) => {
+      const sh = this.sim.shades.find((x) => x.id === m.id);
+      return sh ? [{ x: sh.pos[0], y: sh.pos[1] + 1, z: sh.pos[2], label: "Shade" }] : [];
+    });
+    if (this.mode === "playing") this.hud.updateMarks(markPts, (x, y, z) => this.view.project(x, y, z));
+    else this.hud.updateMarks([], (x, y, z) => this.view.project(x, y, z));
     if (this.mode === "playing" || this.mode === "result") this.hud.update(this.sim, this.night, this.total, this.input.defaultMode, (x, y, z) => this.view.project(x, y, z), this.settings.bindings);
     this.view.render();
     requestAnimationFrame((t) => this.frame(t));

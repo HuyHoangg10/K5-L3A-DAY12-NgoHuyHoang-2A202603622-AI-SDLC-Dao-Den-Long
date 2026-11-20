@@ -135,8 +135,8 @@ export class View {
     this.motesSw = new Swarm(
       this.scene,
       [
-        { geometry: new THREE.SphereGeometry(0.17, 8, 6), material: new THREE.MeshBasicMaterial({ color: PAL.moteCore }), tint: false },
-        { geometry: new THREE.SphereGeometry(0.46, 8, 6), material: new THREE.MeshBasicMaterial({ color: PAL.moteGlow, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false }), tint: false },
+        { geometry: new THREE.SphereGeometry(0.17, 8, 6), material: new THREE.MeshBasicMaterial({ color: PAL.moteCore, fog: false }), tint: false },
+        { geometry: new THREE.SphereGeometry(0.46, 8, 6), material: new THREE.MeshBasicMaterial({ color: 0xffc23a, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false }), tint: false },
       ],
       400,
     );
@@ -146,6 +146,11 @@ export class View {
     this.beams = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xff7a3c }));
     this.beams.frustumCulled = false;
     this.scene.add(this.beams);
+  }
+
+  /** diagnostics only (bench.ts `?aura=0`): hide the translucent glow around shades */
+  setShadeAura(v: boolean): void {
+    this.shadesSw.meshes[1]!.visible = v;
   }
 
   private buildMay(): void {

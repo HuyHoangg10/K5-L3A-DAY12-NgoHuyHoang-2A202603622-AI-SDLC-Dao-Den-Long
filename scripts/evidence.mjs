@@ -2,7 +2,7 @@
 // Runs every scenario through the real built CLI, runs the test suite, checks determinism, and GENERATES
 // docs/evidence/phase-1/README.md + docs/evidence/harness-check.md. Pass/fail comes only from the assertions below.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { buildHeadless } from "./build-headless.mjs";
@@ -10,9 +10,9 @@ import { runHarnessChecks } from "./harness-check.mjs";
 import { root, readManifest, runCli, runEntry } from "./lib.mjs";
 
 const argPhase = process.argv.indexOf("--phase");
-const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-3"; // "phase-2" (frozen, tagged), "phase-3" or "extras"
+const PHASE = argPhase > 0 ? process.argv[argPhase + 1] : "phase-4"; // "phase-2" and "phase-3" are frozen at their tags; "phase-4" is the release; "extras"
 const P3 = PHASE !== "phase-2"; // Ticket-03 rules (fuel, dawn win rule, new durations)
-const REF_PHASE = "phase-3"; // the extras must not change the headless output recorded here
+const REF_PHASE = existsSync(path.join(root, "docs/evidence/phase-4")) ? "phase-4" : "phase-3"; // newest recorded output // the extras must not change the headless output recorded here
 const outDir = path.join(root, "docs/evidence", PHASE);
 const rel = (p) => path.relative(root, p).split(path.sep).join("/");
 
@@ -337,6 +337,141 @@ const checks = {
       [eq(events("lose_dawn", "game_over")[0], { type: "event", tick: 120, name: "game_over", data: { result: "lost", reason: "dawn" } }), "dawn loss wrong"],
     );
   },
+  // ---- Ticket-04 (phase 4) -----------------------------------------------------------------
+  bench() {
+    const f = [];
+    let b;
+    try {
+      b = JSON.parse(readFileSync(path.join(root, "bench.json"), "utf8"));
+    } catch {
+      return ["bench.json is missing or not JSON (run `npm run bench` and commit it)"];
+    }
+    for (const k of ["contract_version", "avg_fps", "p1_low_fps", "frame_ms_p95", "frames", "load_ms", "peak_mem_mb", "vsync_off", "renderer", "os"]) if (!(k in b)) f.push(`bench.json lacks ${k}`);
+    if (b.contract_version !== "1.3") f.push(`bench.json contract_version ${b.contract_version}`);
+    if (!(b.avg_fps > 60)) f.push(`avg_fps ${b.avg_fps} is not above 60`);
+    if (!(b.p1_low_fps > 30)) f.push(`p1_low_fps ${b.p1_low_fps} is not above 30`);
+    if (!(b.load_ms < 10000)) f.push(`load_ms ${b.load_ms} is not below 10000`);
+    if (!(b.frames > 0)) f.push("no frames measured");
+    if (b.duration_s !== 30 || b.seed !== 42) f.push(`bench.json is not from the standard run (seed ${b.seed}, duration ${b.duration_s}); use \`npm run bench\``);
+    if (b.peak_mem_mb === null && !(b.notes ?? []).some((n) => /peak_mem_mb/.test(n))) f.push("peak_mem_mb is null without an explanation");
+    return f;
+  },
+  soak() {
+    const f = [];
+    let committed;
+    try {
+      committed = JSON.parse(readFileSync(path.join(root, "soak.json"), "utf8"));
+    } catch {
+      return ["soak.json is missing or not JSON (run `npm run soak` and commit it)"];
+    }
+    // the evidence run itself: the contract's soak_cmd, executed now
+    const contract = JSON.parse(readFileSync(path.join(root, "game.contract.json"), "utf8"));
+    const outFile = path.join(outDir, "soak-run.json");
+    const parts = contract.soak_cmd.split(" ").slice(1);
+    const r = spawnSync(process.execPath, [...parts, "--seed", "7", "--nights", "10", "--out", outFile], { cwd: root, encoding: "utf8" });
+    let live = null;
+    try {
+      live = JSON.parse(readFileSync(outFile, "utf8"));
+    } catch {
+      f.push(`soak_cmd failed (exit ${r.status})`);
+    }
+    for (const [name, x] of [["soak.json", committed], ["soak run now", live]]) {
+      if (!x) continue;
+      if (x.nights !== 10 || x.results?.length !== 10) f.push(`${name}: not 10 nights`);
+      if (x.crashes !== 0) f.push(`${name}: ${x.crashes} crashes`);
+      if (!(x.mem_end_mb < 1.2 * x.mem_start_mb)) f.push(`${name}: mem_end ${x.mem_end_mb} is not below 1.2 x ${x.mem_start_mb}`);
+      for (const k of ["nights", "crashes", "results", "mem_start_mb", "mem_end_mb", "duration_s"]) if (!(k in x)) f.push(`${name} lacks ${k}`);
+    }
+    return f;
+  },
+  leaderboard() {
+    const f = [];
+    const dir = mkdtempSync(path.join(os.tmpdir(), "ddl-lb-"));
+    const data = path.join(dir, "board.json");
+    const mk = (name, score, at) => ({ name, score, nights_won: 1, achieved_at: at, seed: 1 });
+    // 12 entries, including a tie (the earlier one must stay on top), written as a store file
+    const rows = [mk("Aaa", 50, "2026-01-01T10:00:00+07:00"), mk("Bbb", 500, "2026-01-02T10:00:00+07:00"), mk("Ccc", 500, "2026-01-01T10:00:00+07:00")];
+    for (let i = 0; i < 9; i++) rows.push(mk(`Fill_${i}`, 100 + i, "2026-01-03T10:00:00+07:00"));
+    writeFileSync(data, JSON.stringify({ entries: rows }));
+    const out = path.join(dir, "out.json");
+    const r = spawnSync(process.execPath, [path.join(root, "dist/headless/launcher.js"), "--export-leaderboard", out], { cwd: root, encoding: "utf8", env: { ...process.env, LEADERBOARD_FILE: data } });
+    let got = null;
+    try {
+      got = JSON.parse(readFileSync(out, "utf8"));
+    } catch {
+      f.push(`--export-leaderboard failed (exit ${r.status}): ${r.stderr.trim().slice(0, 100)}`);
+    }
+    if (got) {
+      const names = got.entries.map((e) => e.name);
+      if (!eq(Object.keys(got), ["entries"])) f.push("export must be {\"entries\": [...]}");
+      if (got.entries.length !== 10) f.push(`${got.entries.length} entries exported, expected the top 10`);
+      if (!eq(names.slice(0, 2), ["Ccc", "Bbb"])) f.push(`tie order wrong: ${names.slice(0, 2)} (the earlier 500 must be first)`);
+      if (names.includes("Aaa")) f.push("the lowest score must fall off the top 10");
+      for (const k of ["name", "score", "nights_won", "achieved_at", "seed"]) if (!(k in got.entries[0])) f.push(`entry lacks ${k}`);
+    }
+    const bad = spawnSync(process.execPath, [path.join(root, "dist/headless/launcher.js"), "--export-leaderboard"], { cwd: root, encoding: "utf8" });
+    if (bad.status !== 1) f.push("--export-leaderboard without a file must exit 1");
+    const lt = testFiles.find((x) => x.file === "tests/leaderboard.test.ts");
+    if (!lt || lt.tests.length < 20 || lt.tests.some((t) => t.status !== "passed")) f.push("leaderboard tests missing or failing");
+    rmSync(dir, { recursive: true, force: true });
+    return f;
+  },
+  accessibility() {
+    const f = [];
+    const html = readFileSync(path.join(root, "index.html"), "utf8");
+    for (const id of ["set-rm", "set-big", "set-sub", "keys", "keys-reset", "key-warn", "cues"]) if (!html.includes(`id="${id}"`)) f.push(`index.html lacks #${id}`);
+    if (!/--fs:\s*18px/.test(html) || !/body\.big\s*\{\s*--fs:\s*22\.5px/.test(html)) f.push("base font must be 18 px and large text 22.5 px (x1.25)");
+    const st = testFiles.find((x) => x.file === "tests/settings.test.ts");
+    if (!st || st.tests.length < 7 || st.tests.some((t) => t.status !== "passed")) f.push("settings tests missing or failing");
+    const p4 = testFiles.find((x) => x.file === "tests/phase4.test.ts");
+    if (!p4 || p4.tests.some((t) => t.status !== "passed")) f.push("phase4 tests missing or failing");
+    return f;
+  },
+  packaging() {
+    const f = [];
+    const read = (p) => {
+      try {
+        return readFileSync(path.join(root, p), "utf8");
+      } catch {
+        f.push(`${p} is missing`);
+        return "";
+      }
+    };
+    const readme = read("README.md");
+    const cl = read("CHANGELOG.md");
+    const block = readme.match(/## Run it \(3 commands\)[\s\S]*?```\n([\s\S]*?)```/);
+    const cmds = block ? block[1].trim().split("\n").filter(Boolean) : [];
+    if (cmds.length < 1 || cmds.length > 3) f.push(`README run block has ${cmds.length} commands (must be 1 to 3)`);
+    for (const w of ["Settings and accessibility", "Leaderboard", "System requirements", "bench", "soak", "Controls", "npm test"]) if (!new RegExp(w, "i").test(readme)) f.push(`README lacks "${w}"`);
+    if (!/!\[[^\]]*\]\(docs\/img\/[^)]+\)/.test(readme)) f.push("README has no screenshot (docs/img/*.png)");
+    for (const w of ["phase-1", "phase-2", "phase-3", "phase-4"]) if (!cl.includes(`## ${w}`)) f.push(`CHANGELOG lacks ## ${w}`);
+    const cr = read("CREDITS.md");
+    if (!/Claude/i.test(cr) || !/Three\.js/i.test(cr)) f.push("CREDITS must name the AI tool and Three.js");
+    if (!/MIT License/.test(read("LICENSE"))) f.push("LICENSE is not the MIT text");
+    return f;
+  },
+  retro() {
+    const f = [];
+    let r = "";
+    try {
+      r = readFileSync(path.join(root, "docs/notes/retro.md"), "utf8");
+    } catch {
+      return ["docs/notes/retro.md is missing"];
+    }
+    const words = r.split(/\s+/).filter(Boolean).length;
+    if (words < 350 || words > 1100) f.push(`retro has ${words} words (about 1 to 2 pages is 350 to 1100)`);
+    for (const w of ["Evaluation", "mistakes", "harness", "tokens", "change"]) if (!new RegExp(w, "i").test(r)) f.push(`retro does not mention "${w}"`);
+    if (/TODO|fill in|\.\.\.$/m.test(r)) f.push("retro still has a placeholder");
+    return f;
+  },
+  demo_video() {
+    const readme = readFileSync(path.join(root, "README.md"), "utf8");
+    const link = readme.match(/\*\*Demo video:\*\*\s*(\S.*)/);
+    const hasFile = existsSync(path.join(root, "docs/demo/demo.mp4"));
+    if (hasFile) return [];
+    if (link && /https?:\/\//.test(link[1])) return [];
+    return ["no demo video yet: the README line `**Demo video:**` has no link and docs/demo/demo.mp4 does not exist (recorded by the student)"];
+  },
   determinism() {
     return detRows.filter((r) => !r.same).map((r) => `${r.name}: second run differs`);
   },
@@ -380,7 +515,7 @@ const checks = {
     const rows = testFiles.find((x) => x.file === "tests/io.test.ts")?.tests.filter((t) => t.name.startsWith("contract ")) ?? [];
     if (rows.length < 5 || rows.some((t) => t.status !== "passed")) f.push("contract tests missing or failing");
     const c = JSON.parse(readFileSync(path.join(root, "game.contract.json"), "utf8"));
-    if (c.contract_version !== (P3 ? "1.2" : "1.1") || c.team !== "2A202603622-NgoHuyHoang") f.push("contract header wrong");
+    if (c.contract_version !== (PHASE === "phase-2" ? "1.1" : PHASE === "phase-3" ? "1.2" : "1.3") || c.team !== "2A202603622-NgoHuyHoang") f.push("contract header wrong");
     return f;
   },
   extras_off() {
@@ -418,6 +553,8 @@ const rows = reqs.map((r) => {
   }
   const paths = (r.scenarios ?? []).map((n) => `docs/evidence/${PHASE}/${n}.jsonl`);
   if (r.check === "unit_tests" || r.check === "contract") paths.push(`docs/evidence/${PHASE}/tests.json`);
+  if (r.check === "bench") paths.push("bench.json");
+  if (r.check === "soak") paths.push("soak.json", `docs/evidence/${PHASE}/soak-run.json`);
   if (r.check === "exit_codes") paths.push("(CLI exit codes, see section below)");
   return { ...r, paths, pass: fails.length === 0, fails };
 });

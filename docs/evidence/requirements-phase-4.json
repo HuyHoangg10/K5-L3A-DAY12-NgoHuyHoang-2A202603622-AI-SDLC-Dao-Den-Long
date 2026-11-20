@@ -1,0 +1,356 @@
+{
+  "phase": "phase-4",
+  "note": "Written before the checks were run. Standard numbers and rules come from Ticket-04 (docs/spec/phase-4.md). Items carried over from Phases 2 and 3 keep their ids. A not-met row stays not met until the file or recording exists.",
+  "requirements": [
+    {
+      "id": "P2-01",
+      "requirement": "Movement: full speed 6 m/s within 0.1 s, jump 7 m/s with gravity 20 only from the ground.",
+      "how": "accel 60 ticks (z = 5.75 m) and jump scenario: peak 1.167 m, landing after 41 ticks.",
+      "scenarios": [
+        "accel",
+        "jump"
+      ],
+      "check": "movement"
+    },
+    {
+      "id": "P2-02",
+      "requirement": "Dash: 14 m/s for 12 ticks, cooldown 1.5 s from its start, direction of movement or facing, event dash.",
+      "how": "dash scenario with presses at ticks 0, 89 (refused) and 91: events at ticks 1 and 92.",
+      "scenarios": [
+        "dash",
+        "dash_facing"
+      ],
+      "check": "dash"
+    },
+    {
+      "id": "P2-03",
+      "requirement": "Fireflies: capacity 10; picked when XZ <= 1.0 m and height difference <= 1.5 m; picking gives no points.",
+      "how": "pickup_height and capacity scenarios.",
+      "scenarios": [
+        "pickup_height",
+        "capacity"
+      ],
+      "check": "pickups"
+    },
+    {
+      "id": "P2-04",
+      "requirement": "Lanterns: first lighting costs 10 fireflies, several deposits, nearest acceptable lantern within 2.0 m; +5 per firefly, +100 per first lighting.",
+      "how": "deposit scenarios (full: 10 x 5 + 100 = 150, partial, top-up, 2.1 m away).",
+      "scenarios": [
+        "deposit_full",
+        "deposit_partial",
+        "deposit_topup",
+        "deposit_far"
+      ],
+      "check": "lanterns"
+    },
+    {
+      "id": "P2-05",
+      "requirement": "Falling below Y = -10: once, -1 flame, all fireflies lost, wait 60 ticks, respawn at the start with 90 ticks of invulnerability.",
+      "how": "fall scenario with 4 fireflies carried, event and snapshots around the respawn.",
+      "scenarios": [
+        "fall"
+      ],
+      "check": "falling"
+    },
+    {
+      "id": "P2-06",
+      "requirement": "Shade hit: -1 flame, drop floor(carried/2) fireflies 1.5-2.5 m away (480 ticks), invulnerability 90 ticks, recoil 60 ticks; last flame loses at once.",
+      "how": "shade_hit (hits at ticks 1, 91, 181) and lose_flames.",
+      "scenarios": [
+        "shade_hit",
+        "lose_flames"
+      ],
+      "check": "shade_hit"
+    },
+    {
+      "id": "P2-07",
+      "requirement": "Pulse: 3 fireflies, 5 m (3D from feet + 0.8), stun 120 ticks, push 4 m in 15 ticks, +5 per shade, cooldown 3 s, nothing without enough light.",
+      "how": "pulse, pulse_cooldown, pulse_no_light scenarios.",
+      "scenarios": [
+        "pulse",
+        "pulse_cooldown",
+        "pulse_no_light"
+      ],
+      "check": "pulse"
+    },
+    {
+      "id": "P2-08",
+      "requirement": "Safe zone: lit lanterns keep shades out of 6 m; shades inside when the lantern is lit are pushed out within 30 ticks without damage.",
+      "how": "safe_zone and lit_pushout scenarios.",
+      "scenarios": [
+        "safe_zone",
+        "lit_pushout"
+      ],
+      "check": "safe_zone"
+    },
+    {
+      "id": "P2-10",
+      "requirement": "Shades: 2 spawn at tick 300 then every 480 ticks on the r=37 ring, state spawning for 60 ticks, detection 12 m.",
+      "how": "shade_random and shade_detect scenarios.",
+      "scenarios": [
+        "shade_random",
+        "shade_detect"
+      ],
+      "check": "shade_spawns"
+    },
+    {
+      "id": "P2-11",
+      "requirement": "Fireflies: 20 at distinct standard points at the start, one more at ticks 240, 480... while below 30.",
+      "how": "mote_spawn scenario.",
+      "scenarios": [
+        "mote_spawn"
+      ],
+      "check": "motes"
+    },
+    {
+      "id": "P2-12",
+      "requirement": "Pause: events paused/resumed, state paused, tick counts but sim_tick, time and positions stand still.",
+      "how": "pause scenario.",
+      "scenarios": [
+        "pause"
+      ],
+      "check": "pause"
+    },
+    {
+      "id": "P2-13",
+      "requirement": "Night 2 (two islands and a bridge): 6 lanterns, 270 s, bridge walkable, no floor beside it.",
+      "how": "night2_bridge, night2_off_bridge, random_night2.",
+      "scenarios": [
+        "night2_bridge",
+        "night2_off_bridge",
+        "random_night2"
+      ],
+      "check": "night2"
+    },
+    {
+      "id": "P2-14",
+      "requirement": "Bounce pads: night 2 (14 m/s up, 24 m/s toward the other island, about 1.4 s) and night 3 (12 up, 8 m/s toward -Z onto floor 2); velocity locked in the air.",
+      "how": "night2_pad, night3_pad scenarios.",
+      "scenarios": [
+        "night2_pad",
+        "night3_pad"
+      ],
+      "check": "pads"
+    },
+    {
+      "id": "P2-15",
+      "requirement": "Charm (Bua Gio): picked like a firefly, 600 ticks of 7.2 m/s and dash without cooldown, back after 2700 ticks.",
+      "how": "night2_charm scenario.",
+      "scenarios": [
+        "night2_charm"
+      ],
+      "check": "charm"
+    },
+    {
+      "id": "P2-16",
+      "requirement": "Night 3 (three floors): 7 lanterns, 300 s, cliffs stop Mây, ramps lead to floor 1, off the inner edge she drops back.",
+      "how": "night3_cliff, night3_ramp, random_night3.",
+      "scenarios": [
+        "night3_cliff",
+        "night3_ramp",
+        "random_night3"
+      ],
+      "check": "night3"
+    },
+    {
+      "id": "P2-17",
+      "requirement": "Strong wind in night 3: gust of 5 s every 30 s pushing 2 m/s in one direction.",
+      "how": "night3_wind scenario: gust window 1800..2099 and 10 m of drift.",
+      "scenarios": [
+        "night3_wind"
+      ],
+      "check": "wind"
+    },
+    {
+      "id": "P2-18",
+      "requirement": "Drifters (Gio Lac): idle -> chase (carrying >= 5 within 15 m), touch steals min(3, carried) once, flees; pulse makes it flee or drop the loot.",
+      "how": "drifter_steal, drifter_pulse scenarios.",
+      "scenarios": [
+        "drifter_steal",
+        "drifter_pulse"
+      ],
+      "check": "drifters"
+    },
+    {
+      "id": "P2-19",
+      "requirement": "Determinism: same seed + scenario + inputs = identical bytes in all three nights.",
+      "how": "Every scenario is run twice and compared byte for byte.",
+      "scenarios": [
+        "random_default",
+        "random_night2",
+        "random_night3"
+      ],
+      "check": "determinism"
+    },
+    {
+      "id": "P2-20",
+      "requirement": "Output: snapshot fields of v1.2 are still all there, 3 decimals, ticks never go backwards, end line last.",
+      "how": "Structural assertions over every scenario output.",
+      "scenarios": [
+        "random_default",
+        "random_night3"
+      ],
+      "check": "output_format"
+    },
+    {
+      "id": "P2-21",
+      "requirement": "Exit codes: 0 ok (nights 1-3), 2 malformed inputs/scenario, non-zero with a message otherwise (including --night 4).",
+      "how": "Calls to the CLI with good and bad arguments.",
+      "scenarios": [],
+      "check": "exit_codes"
+    },
+    {
+      "id": "P2-22",
+      "requirement": "A full night (14,400 / 16,200 / 18,000 ticks) runs headless in 30 s or less.",
+      "how": "full_night1/2/3, wall time measured by the script (machine dependent).",
+      "scenarios": [
+        "full_night1",
+        "full_night2",
+        "full_night3"
+      ],
+      "check": "speed"
+    },
+    {
+      "id": "P2-23",
+      "requirement": "Unit tests pass.",
+      "how": "vitest, counts from its JSON report.",
+      "scenarios": [],
+      "check": "unit_tests"
+    },
+    {
+      "id": "P2-24",
+      "requirement": "game.contract.json is v1.3 (adds bench_cmd and soak_cmd; run_cmd takes --export-leaderboard) and its tuning equals src/sim/tuning.ts.",
+      "how": "contract tests in tests/io.test.ts plus header fields.",
+      "scenarios": [],
+      "check": "contract"
+    },
+    {
+      "id": "P3-01",
+      "requirement": "Lantern fuel: a lit lantern has 100 fuel and loses 1 per second; at 0 it goes off (event lantern_out), forgets its fireflies but remembers it was lit.",
+      "how": "fuel_decay and lantern_out scenarios: fuel 99 at tick 60, 90 at tick 600, lantern_out at tick 120.",
+      "scenarios": [
+        "fuel_decay",
+        "lantern_out"
+      ],
+      "check": "fuel"
+    },
+    {
+      "id": "P3-02",
+      "requirement": "Refuel: a lit lantern that is not full takes min(carried, ceil((100 - fuel)/10)) fireflies, +10 fuel each, +5 points each, event refuel; nothing carried = nothing happens.",
+      "how": "refuel, refuel_small, refuel_no_light scenarios.",
+      "scenarios": [
+        "refuel",
+        "refuel_small",
+        "refuel_no_light"
+      ],
+      "check": "refuel"
+    },
+    {
+      "id": "P3-03",
+      "requirement": "Relight: a lantern that was lit before needs 5 fireflies, +5 each and +40; relight:true in lantern_lit; fuel 100.",
+      "how": "relight and relight_partial scenarios.",
+      "scenarios": [
+        "relight",
+        "relight_partial"
+      ],
+      "check": "relight"
+    },
+    {
+      "id": "P3-04",
+      "requirement": "Drain: shades walk to a weak lit lantern (fuel < 30), stop within 2 m and drain 5 fuel/s each; event fuel_drain every 60 ticks; chase when Mây is within 6 m; a pulse on a draining shade scores 15.",
+      "how": "drain, drain_two_shades, drain_chase, drain_pulse scenarios.",
+      "scenarios": [
+        "drain",
+        "drain_two_shades",
+        "drain_chase",
+        "drain_pulse"
+      ],
+      "check": "drain"
+    },
+    {
+      "id": "P3-05",
+      "requirement": "Safe zone only with fuel >= 30: a weak lantern does not keep shades out; refuelling to 30+ pushes them out harmlessly; wandering shades pick a weak lantern first.",
+      "how": "weak_unsafe (29), strong_safe (31), refuel_pushout, wander_to_weak scenarios.",
+      "scenarios": [
+        "weak_unsafe",
+        "strong_safe",
+        "refuel_pushout",
+        "wander_to_weak"
+      ],
+      "check": "weak_safe"
+    },
+    {
+      "id": "P3-06",
+      "requirement": "Capacity 10 + 2 per successful lighting, at most 20.",
+      "how": "capacity_growth, capacity_cap, light_grows_capacity scenarios.",
+      "scenarios": [
+        "capacity_growth",
+        "capacity_cap",
+        "light_grows_capacity"
+      ],
+      "check": "capacity"
+    },
+    {
+      "id": "P3-07",
+      "requirement": "Win at dawn with at least ceil(0.6 x lanterns) lit (reason dawn_survived), score 50 + floor(fuel) per lit lantern + 50 per flame; otherwise lose (reason dawn); lighting everything does not end the night.",
+      "how": "dawn_win, dawn_lose_threshold, all_lit_no_early_win, lose_dawn scenarios.",
+      "scenarios": [
+        "dawn_win",
+        "dawn_lose_threshold",
+        "all_lit_no_early_win",
+        "lose_dawn"
+      ],
+      "check": "dawn"
+    },
+    {
+      "id": "P4-01",
+      "requirement": "Benchmark: 1280x720, 200 wander shades, 100 fireflies, L1-L3 lit, no spawn/damage/pickup/decay/end; bench.json has the contract fields and passes avg_fps > 60, p1_low_fps > 30, load_ms < 10000 (on the machine named in bench.json).",
+      "how": "scripts/bench.mjs run by me (`npm run bench`), file committed; the sim side of the scene is tested in tests/phase4.test.ts; the frame statistics follow the ticket's formulas (tests).",
+      "scenarios": [],
+      "check": "bench"
+    },
+    {
+      "id": "P4-02",
+      "requirement": "Soak: 10 nights in one process, seed 7 + i, random inputs; crashes = 0 and mem_end_mb < 1.2 x mem_start_mb.",
+      "how": "the contract's soak_cmd is run now by this script, and the committed soak.json is checked too.",
+      "scenarios": [],
+      "check": "soak"
+    },
+    {
+      "id": "P4-03",
+      "requirement": "Leaderboard: name 3-12 characters, top 10 by score, ties keep the earlier one on top, survives restart, Leaderboard screen, --export-leaderboard writes {entries: [...]}.",
+      "how": "the real launcher is run with --export-leaderboard on a 12-entry store with a tie; the rules are in tests/leaderboard.test.ts. The screens were exercised by hand in the browser pane (see docs/notes/phase-4-manual-checks.md).",
+      "scenarios": [],
+      "check": "leaderboard"
+    },
+    {
+      "id": "P4-04",
+      "requirement": "Accessibility: rebindable keys with duplicate warning and restore defaults, subtitles / cues, reduce motion, UI font >= 18 px with a large-text option (x1.25).",
+      "how": "settings and phase4 tests; index.html has the controls and the two font sizes. Font sizes at 1280x720 and the screens were measured by hand in a browser (manual checks file).",
+      "scenarios": [],
+      "check": "accessibility"
+    },
+    {
+      "id": "P4-05",
+      "requirement": "Packaging: README with a run block of at most 3 commands, requirements, settings, controls, tests, headless, bench, soak, a screenshot; CHANGELOG for all 4 phases; CREDITS; LICENSE.",
+      "how": "file checks by this script. The GitHub Release v1.0.0 is checked by hand (link in the final report).",
+      "scenarios": [],
+      "check": "packaging"
+    },
+    {
+      "id": "P4-06",
+      "requirement": "Retro of 1-2 pages with the required topics.",
+      "how": "word count and topic check; the content is mine to judge.",
+      "scenarios": [],
+      "check": "retro"
+    },
+    {
+      "id": "P4-07",
+      "requirement": "Demo video under 5 minutes (docs/demo/demo.mp4 or a link in the README).",
+      "how": "file/link check only; the length cannot be checked here and the video is recorded by the student.",
+      "scenarios": [],
+      "check": "demo_video"
+    }
+  ]
+}
