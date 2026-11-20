@@ -452,7 +452,7 @@ export class View {
       const fuel = l.fuel60 / 60;
       const frac = Math.min(1, fuel / T.fuel_max);
       const low = l.lit && fuel < T.low_fuel_threshold;
-      const blink = low && !this.reduceMotion && Math.floor(t * 6) % 2 === 0 ? 0.3 : 1;
+      const blink = low && !this.reduceMotion && Math.floor(t * 2) % 2 === 0 ? 0.3 : 1; // slow blink, 1 Hz (spec)
       const need = l.everLit ? T.relight_cost : T.lantern_cost;
       const fill = l.lit ? 1 : l.deposited / need;
       const mat = v.body.material as THREE.MeshStandardMaterial;

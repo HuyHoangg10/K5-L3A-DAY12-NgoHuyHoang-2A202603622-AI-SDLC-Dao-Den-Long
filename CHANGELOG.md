@@ -18,7 +18,8 @@ Breaking changes (things that behave differently from the previous tag) are mark
 - **BREAKING** A lantern only has a safe zone while it has 30 fuel or more.
 - **BREAKING** `lantern_lit` has `relight: true|false`. New events `refuel`, `fuel_drain`, `lantern_out`; new shade state `drain`.
 - New: refuel (interact with a lit lantern that is not full), relight for 5 fireflies, shades walk to weak lanterns and drain them (scenario field `target_lantern_id` sends one by hand), capacity 10 + 2 per lighting up to 20 (scenario field `successful_lights`).
-- Tests: `tests/phase3.test.ts` (34 tests) for every rule above; `tests/rules.test.ts` and `tests/io.test.ts` were updated for the new numbers. The scenarios `win` and `win_last_tick` were removed because the rule they tested no longer exists; 24 new scenarios were added.
+- The tag commit also contains early Phase 4 groundwork (soak, launcher, leaderboard rules, bench mode, settings screens); none of it changes a rule or the headless output.
+- Tests: `tests/phase3.test.ts` and `tests/phase3b.test.ts` (42 tests, the second file added after the independent review) for every rule above; `tests/rules.test.ts` and `tests/io.test.ts` were updated for the new numbers. The scenarios `win` and `win_last_tick` were removed because the rule they tested no longer exists; 24 new scenarios were added.
 - Live game: fuel bar per lantern in the HUD and above each lantern, blinking and a warning sign below 30, unlit lanterns hang deflated, a thin line from a draining shade to its lantern, refuel hint, capacity in the HUD.
 
 ## phase-2 (contract v1.1, Ticket-02)

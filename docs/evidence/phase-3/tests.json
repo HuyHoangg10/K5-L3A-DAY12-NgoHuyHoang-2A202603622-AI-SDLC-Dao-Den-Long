@@ -1,7 +1,7 @@
 {
-  "passed": 315,
+  "passed": 323,
   "failed": 0,
-  "total": 315,
+  "total": 323,
   "files": [
     {
       "file": "tests/champions.test.ts",
@@ -792,7 +792,7 @@
           "status": "passed"
         },
         {
-          "name": "1. lantern fuel fuel is exact over long runs: 14,399 ticks leave exactly 100 - 239.98 clamped at the out point (no drift)",
+          "name": "1. lantern fuel fuel is exact over a long run: 100 fuel last exactly 6000 ticks, the lantern goes out on the 6000th (no float drift)",
           "status": "passed"
         },
         {
@@ -913,6 +913,43 @@
         },
         {
           "name": "5. score dawn: +50 + floor(fuel) per lit lantern and +50 per flame left; nothing for the time",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/phase3b.test.ts",
+      "tests": [
+        {
+          "name": "boundaries of the drain a lantern with exactly 30 fuel (after the tick's decay) is not weak, 29.98 is",
+          "status": "passed"
+        },
+        {
+          "name": "boundaries of the drain Mây exactly 6 m from the draining shade: it turns to chase; 6.01 m: it keeps draining",
+          "status": "passed"
+        },
+        {
+          "name": "boundaries of the drain the shade starts to drain within 2 m of the lantern, not at 2.1 m",
+          "status": "passed"
+        },
+        {
+          "name": "fuel in the snapshot and ever_lit a lantern lit by Mây, burnt out, then needs only 5 fireflies again (ever_lit is set by a natural lighting)",
+          "status": "passed"
+        },
+        {
+          "name": "fuel in the snapshot and ever_lit fuel is rounded to one decimal, not cut: 99.98 prints 100, 99.93 prints 99.9",
+          "status": "passed"
+        },
+        {
+          "name": "which lantern a wandering shade drains a weak lit lantern comes before an unlit one that is nearer",
+          "status": "passed"
+        },
+        {
+          "name": "which lantern a wandering shade drains equal distances: the smaller id",
+          "status": "passed"
+        },
+        {
+          "name": "which lantern a wandering shade drains the nearest weak lit lantern",
           "status": "passed"
         }
       ]
