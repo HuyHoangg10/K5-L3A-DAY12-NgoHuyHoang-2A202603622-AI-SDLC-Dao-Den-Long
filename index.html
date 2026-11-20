@@ -27,7 +27,7 @@
       .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--amber), var(--gold)); }
       #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 20px; background: var(--panel); border: 1px solid rgba(255, 199, 102, 0.35); opacity: 0; transition: opacity 0.25s; pointer-events: none; }
       #toast.show { opacity: 1; }
-      #hint { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 13px; opacity: 0.8; background: var(--panel); border-radius: 10px; padding: 6px 14px; pointer-events: none; text-align: center; }
+      #hint { position: fixed; bottom: 10px; width: max-content; max-width: 96vw; left: 50%; transform: translateX(-50%); font-size: 13px; opacity: 0.8; background: var(--panel); border-radius: 10px; padding: 6px 14px; pointer-events: none; text-align: center; }
       #flash { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(80, 20, 130, 0) 40%, rgba(90, 30, 150, 0.55) 100%); opacity: 0; transition: opacity 0.4s; }
       #flash.on { opacity: 1; transition: none; }
       .overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(6, 8, 24, 0.62); text-align: center; }
@@ -58,7 +58,7 @@
       </div>
     </div>
     <div id="toast"></div>
-    <div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows move &middot; <kbd>Space</kbd> jump &middot; <kbd>E</kbd> put fireflies in a lantern &middot; <kbd>Q</kbd> / <kbd>F</kbd> glow &middot; drag mouse to turn camera &middot; <kbd>R</kbd> restart</div>
+    <div id="hint"><kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> move &middot; <kbd>Space</kbd> jump &middot; <kbd>F</kbd> put fireflies in a lantern &middot; <kbd>D</kbd> glow &middot; <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> card skills &middot; drag mouse to turn camera &middot; <kbd>Enter</kbd> play again</div>
     <div class="overlay show" id="start">
       <div class="card">
         <h1>Lantern Island</h1>
@@ -73,7 +73,7 @@
         <p id="end-text"></p>
         <p class="score">Score <span id="end-score"></span></p>
         <table id="end-table"></table>
-        <button id="end-btn">Play again (R)</button>
+        <button id="end-btn">Play again (Enter)</button>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
