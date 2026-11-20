@@ -277,9 +277,10 @@ const checks = {
     return f;
   },
   extras_tests() {
-    const file = testFiles.find((x) => x.file === "tests/extras.test.ts");
-    const t = file?.tests ?? [];
-    return t.length >= 20 && t.every((x) => x.status === "passed") ? [] : [`extras tests: ${t.filter((x) => x.status !== "passed").length} failing or too few (${t.length})`];
+    const mine = testFiles.filter((x) => ["tests/extras.test.ts", "tests/champions.test.ts", "tests/steer.test.ts"].includes(x.file));
+    const t = mine.flatMap((x) => x.tests);
+    const bad = t.filter((x) => x.status !== "passed").length;
+    return mine.length === 3 && t.length >= 70 && bad === 0 ? [] : [`extras tests: ${mine.length}/3 files, ${t.length} tests, ${bad} failing`];
   },
   unit_tests() {
     return vitest && vitest.numFailedTests === 0 && vitest.numTotalTests > 0 ? [] : [`vitest failed: ${vitest ? vitest.numFailedTests + " failing" : "no report"}`];
