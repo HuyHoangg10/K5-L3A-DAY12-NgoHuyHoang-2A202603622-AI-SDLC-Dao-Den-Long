@@ -1,7 +1,7 @@
 {
-  "passed": 305,
+  "passed": 315,
   "failed": 0,
-  "total": 305,
+  "total": 315,
   "files": [
     {
       "file": "tests/champions.test.ts",
@@ -913,6 +913,51 @@
         },
         {
           "name": "5. score dawn: +50 + floor(fuel) per lit lantern and +50 per flame left; nothing for the time",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "file": "tests/phase4.test.ts",
+      "tests": [
+        {
+          "name": "benchmark numbers (Ticket-04 definitions) avg_fps = 1000 * N / sum(dt)",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark numbers (Ticket-04 definitions) counts the frames and survives an empty list",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark numbers (Ticket-04 definitions) frame_ms_p95 is the 95th percentile (nearest rank)",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark numbers (Ticket-04 definitions) p1_low_fps uses the k = max(1, ceil(0.01 N)) largest frame times",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark scene in the sim (option bench) after 40 s: nothing spawned, nobody hurt, nothing picked up, fuel unchanged, the night has not ended",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark scene in the sim (option bench) has exactly 200 shades, 100 fireflies and lanterns L1-L3 lit with 100 fuel",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark scene in the sim (option bench) shades keep walking (wander) in the bench scene",
+          "status": "passed"
+        },
+        {
+          "name": "benchmark scene in the sim (option bench) without the option the same scene does hurt Mây and picks fireflies up (so the option is what turns them off)",
+          "status": "passed"
+        },
+        {
+          "name": "subtitle directions camera yaw 0 looks along +Z: +Z is ahead, -X is right, +X is left, -Z is behind",
+          "status": "passed"
+        },
+        {
+          "name": "subtitle directions turning the camera 90 degrees changes what is ahead",
           "status": "passed"
         }
       ]
