@@ -329,7 +329,7 @@
           "status": "passed"
         },
         {
-          "name": "contract has every key of contracts v1.0 and v1.1 plus the v1.2 ones",
+          "name": "contract has every tuning key of contracts v1.0 to v1.2 (v1.3 adds commands, not numbers)",
           "status": "passed"
         },
         {
