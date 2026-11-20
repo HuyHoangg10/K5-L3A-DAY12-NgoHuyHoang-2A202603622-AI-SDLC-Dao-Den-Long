@@ -2,9 +2,9 @@
 
 **Demo video:** _coming in Phase 4 (link goes here)_
 
-A small 3D night game. Dark mist has swallowed the lights of the island. You play **Mây**, a girl in a conical hat with a little lantern hanging on a stick. Pick up fireflies, carry them to the five big lanterns and light them all before dawn. Ink Shades (purple-black blobs) chase you; a touch costs a flame and makes you drop some fireflies. You can glow to push them away, but glowing burns fireflies too. The island gets brighter with every lantern you light.
+A small 3D night game in three nights. Dark mist has swallowed the lights of an island chain. You play **Mây**, a girl in a conical hat with a little lantern on a stick. Pick up fireflies, carry them to the big lanterns and light them all before dawn. Ink Shades (purple-black blobs) chase you; a touch costs a flame and makes you drop fireflies. Glow to push them away. Night 2 adds grey Drifters that steal fireflies, night 3 adds a gusting wind. The island gets brighter with every lantern you light.
 
-Everything is made from Three.js shapes and lights, no downloaded assets. The game rules are plain TypeScript in `src/sim/` and are used both by the 3D game and by the headless mode.
+Everything is built from Three.js shapes, lights and WebAudio synthesis, no downloaded assets. The game rules are plain TypeScript in `src/sim/` and are used both by the 3D game and by the headless mode.
 
 ## Run it (3 commands)
 
@@ -16,11 +16,19 @@ npm run build
 npm run dev
 ```
 
-Then open the address Vite prints (http://localhost:5173). Click "Begin the night" or press Space.
+Then open the address Vite prints (http://localhost:5173). Pick a character with the arrow keys (or click, or 1-4) and press Enter.
+
+## The three nights
+
+| night | island | lanterns | time | what is new |
+|---|---|---|---|---|
+| 1 | Đảo Bến, one round island (radius 40) | 5 | 5:00 | |
+| 2 | Đảo Cau, two islands and a bamboo bridge | 6 | 5:30 | bounce pads, Drifters (Gió Lạc), the wind charm (Bùa Gió) |
+| 3 | Đảo Chuông, three floors, ramps, a bell tower | 7 | 6:00 | cliffs, a bounce pad to the top floor, strong wind every 30 s, faster shades |
+
+Win a night by lighting every lantern while you still have a flame. Lose it when your 3 flames are gone or the time runs out. Win night 3 and dawn comes. Flames refill every night.
 
 ## Controls
-
-Pick a champion on the start screen (click it, press 1 / 2 / 3, or use the left and right arrows) and press Enter to begin. Then:
 
 | input | action |
 |---|---|
@@ -28,25 +36,26 @@ Pick a champion on the start screen (click it, press 1 / 2 / 3, or use the left 
 | left or middle mouse drag | turn the camera (the 3D view still rotates) |
 | arrow keys | walk with the keyboard (cancels a click target) |
 | Space | jump |
-| F | put the fireflies you carry into the nearest lantern (within 3 m) |
-| D | glow: stuns and pushes away Ink Shades nearby, costs 2 fireflies |
-| Q W E R | the champion's four skills, aimed at the mouse |
-| Enter | start with the highlighted champion; play again after the night is over |
-| Esc | back to the champion screen (after the night is over) |
+| Shift | dash (14 m/s for 0.2 s, 1.5 s cooldown) |
+| Q (default Mây) / D | glow: stuns and pushes away Ink Shades within 5 m, costs 3 fireflies, 3 s cooldown |
+| E (default Mây) / F | put the fireflies you carry into the nearest unlit lantern (within 2 m) |
+| Q W E R (champions) | the champion's four skills, aimed at the mouse |
+| Esc or P | pause (menu: resume, restart night, settings, back to menu) |
+| Enter | confirm: begin, next night, play again |
 
-Fireflies are picked up automatically when you walk over them.
+Fireflies and charms are picked up automatically when you walk over them. Settings (volume, mouse sensitivity, an easier-to-tell-apart colour set) are saved on your computer.
 
 ## How scoring works
 
 | event | points |
 |---|---|
-| each firefly picked up | 10 |
+| each firefly put into a lantern | 10 |
 | each lantern lit | 100 |
-| each Ink Shade stunned by a glow | 20 |
+| each Ink Shade hit by a glow (each time) | 5 |
 | **win only:** each full second left on the clock | 2 |
 | **win only:** each flame left | 50 |
 
-You win when all 5 lanterns are lit. You lose when your 3 flames are gone or the night (4:00) runs out. A lantern needs 5 fireflies; you can carry 10. All numbers are in `src/sim/tuning.ts`.
+The game total is the sum of the nights you won. A lantern needs 10 fireflies (you can deposit in several visits), you can carry 10.
 
 ## Tests and headless mode
 
@@ -54,54 +63,55 @@ You win when all 5 lanterns are lit. You lose when your 3 flames are gone or the
 npm test                 # builds the CLI, then runs vitest
 npm run typecheck
 npm run check            # typecheck + tests + determinism check
-npm run evidence         # runs scenarios, writes docs/evidence/**
+npm run evidence         # runs scenarios, writes docs/evidence/phase-2/**
+npm run evidence:extras  # champion kits did not change headless output
 ```
 
-The headless CLI runs the same rules without a window or GPU, 60 ticks per second, and writes JSON lines (snapshots, events, final `end` line):
+The headless CLI runs the same rules without a window or GPU, 60 ticks per second, and writes JSON lines (snapshots, events, a final `end` line). A full night (up to 21,600 ticks) takes well under a second here.
 
 ```
 node dist/headless/cli.js --seed 1 --night 1 --ticks 600 --out out.jsonl
-node dist/headless/cli.js --seed 1 --night 1 --scenario scenarios/pickup/scenario.json --inputs scenarios/pickup/inputs.json --ticks 60 --out pickup.jsonl
+node dist/headless/cli.js --seed 1 --night 2 --scenario scenarios/night2_pad/scenario.json --inputs scenarios/night2_pad/inputs.json --ticks 130 --out pad.jsonl
 ```
 
-Options: `--seed <int>`, `--night 1`, `--scenario <file>`, `--inputs <file>`, `--ticks <int>`, `--out <file>`, `--snapshot-every <int>` (default 10). Exit code 0 on success, 2 if the inputs or scenario file is unreadable or malformed, 1 for other errors (message on stderr).
+Options: `--seed <int>`, `--night 1|2|3`, `--scenario <file>`, `--inputs <file>`, `--ticks <int>`, `--out <file>`, `--snapshot-every <int>` (default 10). Exit code 0 on success, 2 if the inputs or scenario file is unreadable or malformed, 1 for other errors (message on stderr).
 
-A scenario (see `scenarios/` for all of them):
+A scenario (see `scenarios/` for 40 more):
 
 ```json
-{ "player": { "pos": [0, 0, 0], "carried": 0, "flames": 3 },
-  "random_motes": false, "random_shades": false,
+{ "player": { "pos": [0, 0, 0], "carried": 0, "flames": 3, "dash_cd_ticks": 0, "charm_ticks": 0 },
+  "random_motes": false, "random_shades": false, "random_drifters": false, "wind_enabled": false,
   "motes": [[0, 0, 5]],
-  "shades": [{ "pos": [10, 0, 0] }],
+  "shades": [{ "pos": [10, 1, 0], "state": "chase" }],
+  "drifters": [{ "id": "D1", "pos": [8, 2, 0] }],
   "lanterns": [{ "id": "L1", "pos": [0, 0, 25], "deposited": 0 }],
   "time_left_s": 300 }
 ```
 
-Inputs:
+Inputs (`dash` and `pause` are new in v1.1):
 
 ```json
-{ "frames": [ { "tick": 0, "move": [0, 1], "cam_yaw_deg": 0 }, { "tick": 120, "interact": true }, { "tick": 121, "interact": false } ] }
+{ "frames": [ { "tick": 0, "move": [0, 1], "cam_yaw_deg": 0 }, { "tick": 120, "interact": true }, { "tick": 121, "interact": false, "dash": true } ] }
 ```
 
-The contract for the grader is in `game.contract.json` (`tuning` equals `src/sim/tuning.ts`, a test checks that).
+The contract for the grader is in `game.contract.json` (v1.1; `tuning` equals `src/sim/tuning.ts`, a test checks that). All numbers are the lab's standard numbers from Ticket-02; where the ticket left something open I made a choice and listed it with an id in `docs/notes/assumptions.md` (P2-1 ... P2-23).
 
-### Tuning values that are `false` or not literal
+### Things that differ from what you might guess
 
-- `fall_enabled: false`: there is no falling. The island edge (50 m from the centre) is a wall, so the `player_hit` event with `by: "fall"` never appears.
-- `hit_drop_ratio: 0.5`: a hit makes you drop `floor(carried × 0.5)` fireflies, which land on the ground around you.
-- `safe_radius: 4`: Ink Shades cannot enter 4 m around any lantern (lit or not), so a lantern is a safe place to stand.
-- `pulse_cost: 2`: the glow costs 2 carried fireflies. With fewer than 2 nothing happens.
-- `lantern_cost: 5`: fireflies needed to light one lantern. You may deposit part of it and come back.
+- **Running starts and stops in 0.1 s** (6 ticks), so after 60 ticks of running you are 5.75 m away, not 6.
+- **Fireflies score when put into a lantern, not when picked up.**
+- **Night 3 starts at (0,0,-30)** because the centre is inside the top floor (the ticket text I read gave no start point).
+- `fall_enabled` is `true`: falling below Y = -10 costs a flame and all fireflies, then you respawn after 1 s.
 
-Every other guess I had to make is listed with an id in `docs/notes/assumptions.md`.
+## Characters
 
-## Creative additions: champions with Q W E R
+Everything below the default character is live-game only. It lives in `src/extras/` and is wired in by `src/render/game.ts`; `src/sim` and `src/headless` never import it, so **headless mode does not contain it**. `npm run evidence:extras` re-runs every scenario and checks that the output is byte-identical to the files recorded in `docs/evidence/phase-2`.
 
-Everything in this section is live-game only. It lives in `src/extras/` and is wired in by `src/render/game.ts`; `src/sim` and `src/headless` never import it, so **headless mode does not contain it**. `npm run evidence:extras` re-runs every scenario and checks that the output is byte-identical to the files recorded at tag `phase-1` (see `docs/evidence/extras/README.md`). Names, art and numbers are my own; the shape of the kits is inspired by champion kits in MOBA games.
+**Default: Mây.** No extra skills: run, jump, dash, glow (Q), put fireflies in a lantern (E). The default character is selected when the game starts.
 
-Shades have 3 "ink". Skills thin the ink; at 0 the shade dissolves into a firefly (30 points). Fireflies are the mana of the champions that need it.
+The other characters replace Q, W, E and R with their own skills (D glows and F lights, as the base actions). Names, art and numbers are my own; the shape of the kits is inspired by champion kits in MOBA games. Shades have 3 "ink" in the live game: skills thin it, at 0 the shade dissolves into a firefly (30 points).
 
-**1. Mây the Card Reader**
+**Mây the Card Reader**
 
 | key | skill | what it does | cooldown |
 |---|---|---|---|
@@ -110,7 +120,7 @@ Shades have 3 "ink". Skills thin the ink; at 0 the shade dissolves into a firefl
 | E | Lure Lantern | costs 1 firefly. Throw a bright lantern up to 10 m toward the mouse. For 4 s shades within 16 m of it walk to the lantern instead of to you, then it bursts: stun 2 s and 1 ink | 14 s |
 | R | Lantern Gate | put the mouse near a lantern and press R. After 1.5 s you appear 2 m from it. A hit cancels it | 25 s (5 s if cancelled) |
 
-**2. Rowdy Cub** (no mana, uses a rage bar; rage comes from hitting shades and from being hit)
+**Rowdy Cub** (no mana, uses a rage bar; rage comes from hitting shades and from being hit)
 
 | key | small form | big form (rage full, 10 s) |
 |---|---|---|
@@ -121,7 +131,7 @@ Shades have 3 "ink". Skills thin the ink; at 0 the shade dissolves into a firefl
 
 The cub is 10% faster than Mây when small and grows 1.55x when big.
 
-**3. Serpent Weaver** (fireflies are her mana, +10% move speed always)
+**Serpent Weaver** (fireflies are her mana, +10% move speed always)
 
 | key | skill | what it does | cooldown |
 |---|---|---|---|
@@ -135,9 +145,9 @@ The rules of every kit are tested in `tests/extras.test.ts`, `tests/champions.te
 ## Repository map
 
 - `src/extras/`: the card skills (live mode only)
-- `docs/spec/phase-1.md`: the Phase 1 spec, copied as given
+- `docs/spec/`: the Phase 1 spec (copied as given), the Phase 2 spec (my transcription of Ticket-02) and its acceptance criteria
 - `docs/notes/`: assumptions, AI usage log, where the AI was wrong, evaluation, retro
-- `docs/evidence/`: generated evidence (`phase-1/README.md` is the table), `harness-check.md` for the hooks
+- `docs/evidence/`: generated evidence (`phase-1/`, `phase-2/README.md` is the table), `harness-check.md` for the hooks
 - `AGENTS.md`, `CLAUDE.md`, `.claude/`, `scripts/hooks/`: the AI harness
 - `docs/lab-brief/`: the lab's own files (README, rules, rubric, guide)
 - `CREDITS.md`, `LICENSE` (MIT)

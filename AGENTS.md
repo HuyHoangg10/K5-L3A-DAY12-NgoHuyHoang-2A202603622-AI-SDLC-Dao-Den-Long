@@ -4,9 +4,9 @@ Dao Den Long (Lantern Island): a 3D game where Mây, a girl in a conical hat wit
 
 ## Layout
 ```
-src/sim/       pure game logic: no Date, no Math.random, no DOM, no Three.js
+src/sim/       pure game logic (tuning, maps for 3 nights, sim, output): no Date, no Math.random, no DOM, no Three.js
 src/headless/  Node CLI (reads args/scenario/inputs, writes JSONL)
-src/render/    Three.js scene, camera, HUD, keyboard (uses src/sim, adds no rules)
+src/render/    Three.js scene, HUD, menus, sound, settings, input (uses src/sim, adds no rules)
 src/main.ts    web entry
 src/extras/    creative additions (champion kits Q W E R), live game only, never imported by sim/headless
 scenarios/     scenario + inputs used by tests and evidence (manifest.json lists them)
@@ -23,6 +23,12 @@ game.contract.json   Test Contract v1.0; "tuning" must equal src/sim/tuning.ts
 - Headless: `node dist/headless/cli.js --seed 1 --night 1 --ticks 600 --out out.jsonl [--scenario f.json] [--inputs f.json] [--snapshot-every 10]`
 - Evidence: `npm run evidence` (writes `docs/evidence/**`)
 - Everything the Stop hook runs: `npm run check` (typecheck + test + determinism)
+
+## Scope now (Phase 2, contract v1.1)
+- Standard numbers and maps come from the lab ticket and live in `src/sim/tuning.ts` and `src/sim/maps.ts`; do not invent numbers, change them only when the ticket changes. Spec copy: `docs/spec/phase-2.md`; acceptance: `docs/spec/phase-2-acceptance.md`; my gap-fillers: `docs/notes/assumptions.md` (P2-*).
+- Every new feature needs a headless scenario in `scenarios/`, a test, and a requirement in `docs/evidence/requirements-phase-2.json`.
+- Run all three nights headless with `--night 1|2|3`; a full night must finish in 30 s or less.
+- `npm run evidence` now writes `docs/evidence/phase-2/`; `npm run evidence:extras` checks the champion kits did not change headless output.
 
 ## Conventions
 - Fixed 60 ticks/s, 1 tick = 1/60 s. Tick model: snapshot 0 is before input; step k reads input of tick k, makes state k+1, events get `tick = k+1`.
