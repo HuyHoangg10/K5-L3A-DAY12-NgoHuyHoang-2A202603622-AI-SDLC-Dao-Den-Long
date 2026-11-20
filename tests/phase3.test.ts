@@ -13,7 +13,7 @@ describe("1. lantern fuel", () => {
     expect(lantern(r.snapAt(60)).fuel).toBe(99);
     expect(lantern(r.snapAt(600)).fuel).toBe(90);
   });
-  it("fuel is exact over long runs: 14,399 ticks leave exactly 100 - 239.98 clamped at the out point (no drift)", () => {
+  it("fuel is exact over a long run: 100 fuel last exactly 6000 ticks, the lantern goes out on the 6000th (no float drift)", () => {
     const r = runInline({ ticks: 6000, every: 6000, scenario: { ...bare, lanterns: [{ id: "L1", lit: true }] } });
     expect(lantern(r.snapAt(6000)).lit).toBe(false); // 100 s of fuel = 6000 ticks: out on the 6000th tick
     expect(r.eventsNamed("lantern_out")[0]?.tick).toBe(6000);
@@ -77,7 +77,7 @@ describe("2. shades drain fuel", () => {
   it("a wandering shade walks to a weak (< 30) lit lantern, stops within 2 m and drains: state drain, 5 + 1 fuel per second", () => {
     const r = runNamed("drain");
     expect(r.snapAt(10).shades[0].state).toBe("drain");
-    expect(lantern(r.snapAt(60)).fuel).toBeCloseTo(25 - 59 * (6 / 60) - 1 / 60 * 0, 0); // about 19 after 60 ticks
+    expect(lantern(r.snapAt(60)).fuel).toBeCloseTo(25 - 60 * (6 / 60), 0); // 6 fuel per second (1 own decay + 5 drain): about 19 after 60 ticks
     const ev = r.eventsNamed("fuel_drain");
     expect(ev[0]?.data).toEqual({ lantern_id: "L1", shade_id: "S1", fuel: 19 });
     expect(ev.slice(0, 3).map((e) => e.tick)).toEqual([61, 121, 181]);
@@ -140,7 +140,7 @@ describe("2. shades drain fuel", () => {
   });
   it("only wandering shades pick a weak lantern: a shade that is chasing keeps chasing Mây", () => {
     const r = runInline({ ticks: 30, every: 10, scenario: { ...bare, player: { pos: [0, 0, 0] }, lanterns: [{ id: "L1", lit: true, fuel: 20 }], shades: [{ id: "S1", pos: [8, 1, 12], state: "chase" }] } });
-    expect(r.snapAt(30).shades[0].pos[0]).toBeLessThan(8);
+    expect(r.snapAt(30).shades[0].pos[2]).toBeLessThan(12); // towards Mây at z = 0; the weak lantern is at z = 25, the other way
   });
   it("a wandering shade heads for the nearest weak lit lantern before any unlit one", () => {
     const r = runNamed("wander_to_weak");
@@ -155,8 +155,8 @@ describe("2. shades drain fuel", () => {
   });
   it("scenario target_lantern_id sends a wandering shade to that lantern", () => {
     const r = runNamed("target_lantern");
-    expect(dist2(r.snapAt(120).shades[0].pos, [23.8, 0, 7.7])).toBeGreaterThan(0); // L2 is at +X, the shade starts at -20: it must move away from -X side
-    expect(r.snapAt(120).shades[0].pos[0]).toBeGreaterThan(-20);
+    // L2 is at +X, the shade starts at x = -20 and must walk towards it
+    expect(r.snapAt(120).shades[0].pos[0]).toBeGreaterThan(-20 + 3);
   });
   it("a draining shade can still touch Mây if she walks into it (no special protection)", () => {
     const r = runInline({ ticks: 5, scenario: { ...bare, player: { pos: [1.5, 0, 25.4], carried: 0 }, lanterns: [{ id: "L1", lit: true, fuel: 20 }], shades: [{ id: "S1", pos: [1.5, 1, 25], state: "drain" }] } });

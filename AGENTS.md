@@ -13,7 +13,7 @@ scenarios/     scenario + inputs used by tests and evidence (manifest.json lists
 tests/         vitest
 scripts/       Node .mjs only (build, evidence, determinism, hooks)
 docs/          spec/ notes/ evidence/ demo/ lab-brief/
-game.contract.json   Test Contract v1.0; "tuning" must equal src/sim/tuning.ts
+game.contract.json   Test Contract (v1.2 at phase 3); "tuning" must equal src/sim/tuning.ts
 ```
 
 ## Commands (work on Windows, macOS, Linux)
