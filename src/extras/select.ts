@@ -42,6 +42,13 @@ export class ChampionSelect {
     this.onPick(this.selected);
   }
 
+  /** move the highlight left (-1) or right (+1), wrapping around */
+  step(delta: number): void {
+    const i = CHAMPIONS.findIndex((c) => c.id === this.selected);
+    const next = CHAMPIONS[(i + delta + CHAMPIONS.length) % CHAMPIONS.length];
+    if (next) this.pick(next.id);
+  }
+
   pickIndex(n: number): void {
     const c = CHAMPIONS[n - 1];
     if (c) this.pick(c.id);

@@ -36,8 +36,12 @@ export class Game {
     this.kitView = new KitView(this.view.scene);
     this.input = new InputState(this.view.renderer.domElement);
     this.select = new ChampionSelect(document.getElementById("champs") as HTMLElement);
-    this.input.onStart = () => this.begin();
-    this.input.onRestart = () => this.restart();
+    this.input.onSpace = () => this.begin(); // Space also starts from the champion screen
+    this.input.onEnter = () => this.enter();
+    this.input.onStep = (d) => {
+      if (!this.running) this.select.step(d);
+    };
+    this.input.onEscape = () => this.changeChampion();
     this.input.onDigit = (n) => {
       if (!this.running) this.select.pickIndex(n);
     };
@@ -70,12 +74,19 @@ export class Game {
     this.hud.toast("Right-click to walk. Pick up fireflies, then press F at a lantern", 4000);
   }
 
+  /** Enter: start with the highlighted champion, or play again after the night is over */
+  private enter(): void {
+    if (!this.running) this.begin();
+    else this.restart();
+  }
+
   private restart(): void {
     if (!this.running || this.sim.state === "playing") return; // Enter only restarts after the night is over
     this.newRun();
   }
 
   private changeChampion(): void {
+    if (this.running && this.sim.state === "playing") return; // Esc only changes champion between nights
     this.running = false;
     this.hud.hideEnd();
     this.hud.showStart();

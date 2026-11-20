@@ -60,15 +60,15 @@
       </div>
     </div>
     <div id="toast"></div>
-    <div id="hint"><kbd>Right-click</kbd> walk &middot; <kbd>Space</kbd> jump &middot; <kbd>F</kbd> put fireflies in a lantern &middot; <kbd>D</kbd> glow &middot; <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> champion skills (aim with the mouse) &middot; drag left/middle mouse to turn the camera &middot; <kbd>Enter</kbd> play again</div>
+    <div id="hint"><kbd>Right-click</kbd> walk &middot; <kbd>Space</kbd> jump &middot; <kbd>F</kbd> put fireflies in a lantern &middot; <kbd>D</kbd> glow &middot; <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> champion skills (aim with the mouse) &middot; drag left/middle mouse to turn the camera &middot; <kbd>Enter</kbd> play again &middot; <kbd>Esc</kbd> change champion</div>
     <div class="overlay show" id="start">
       <div class="card wide">
         <h1>Lantern Island</h1>
         <p>Dark mist has swallowed the lights of the island. You are the youngest lamp keeper. Gather fireflies, light the five big lanterns before dawn, and keep away from the Ink Shades.</p>
-        <p><b>Pick your champion</b> (click, or press 1 / 2 / 3):</p>
+        <p><b>Pick your champion</b> (click, press 1 / 2 / 3, or use <kbd>&larr;</kbd> <kbd>&rarr;</kbd>), then press <kbd>Enter</kbd>:</p>
         <div id="champs"></div>
         <p class="small"><kbd>Right-click</kbd> walk &middot; drag with <kbd>left</kbd> or <kbd>middle</kbd> mouse to turn the camera &middot; <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd><kbd>R</kbd> skills aim at the mouse</p>
-        <button id="start-btn">Begin the night (Space)</button>
+        <button id="start-btn">Begin the night (Enter)</button>
       </div>
     </div>
     <div class="overlay" id="end">
@@ -77,7 +77,7 @@
         <p id="end-text"></p>
         <p class="score">Score <span id="end-score"></span></p>
         <table id="end-table"></table>
-        <button id="end-btn">Play again (Enter)</button> <button id="change-btn">Change champion</button>
+        <button id="end-btn">Play again (Enter)</button> <button id="change-btn">Change champion (Esc)</button>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

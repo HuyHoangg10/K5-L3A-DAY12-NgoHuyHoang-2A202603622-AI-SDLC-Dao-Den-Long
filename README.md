@@ -20,7 +20,7 @@ Then open the address Vite prints (http://localhost:5173). Click "Begin the nigh
 
 ## Controls
 
-Pick a champion on the start screen (click, or press 1 / 2 / 3), then:
+Pick a champion on the start screen (click it, press 1 / 2 / 3, or use the left and right arrows) and press Enter to begin. Then:
 
 | input | action |
 |---|---|
@@ -31,7 +31,8 @@ Pick a champion on the start screen (click, or press 1 / 2 / 3), then:
 | F | put the fireflies you carry into the nearest lantern (within 3 m) |
 | D | glow: stuns and pushes away Ink Shades nearby, costs 2 fireflies |
 | Q W E R | the champion's four skills, aimed at the mouse |
-| Enter | play again (after the night is over) |
+| Enter | start with the highlighted champion; play again after the night is over |
+| Esc | back to the champion screen (after the night is over) |
 
 Fireflies are picked up automatically when you walk over them.
 

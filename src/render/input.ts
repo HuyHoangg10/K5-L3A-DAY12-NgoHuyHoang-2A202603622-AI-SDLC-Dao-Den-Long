@@ -18,9 +18,12 @@ export class InputState {
   pointer: { x: number; y: number } | null = null;
   rightHeld = false;
   private rightClick = false;
-  onRestart: () => void = () => {};
-  onStart: () => void = () => {};
+  /** Enter: confirm the champion on the start screen, play again on the end screen */
+  onEnter: () => void = () => {};
+  onSpace: (() => void) | null = null;
   onDigit: (n: number) => void = () => {};
+  onStep: (delta: number) => void = () => {};
+  onEscape: () => void = () => {};
   private dragging = false;
 
   constructor(target: HTMLElement) {
@@ -34,8 +37,15 @@ export class InputState {
       if (k === "d") this.latch.pulse = true;
       if (k === "q" || k === "w" || k === "e" || k === "r") this.skills[k] = true;
       if (k >= "1" && k <= "9") this.onDigit(Number(k));
-      if (k === "enter") this.onRestart();
-      if (k === " " || k === "enter") this.onStart();
+      if (k === "arrowleft") this.onStep(-1);
+      if (k === "arrowright") this.onStep(1);
+      if (k === "escape") this.onEscape();
+      if (k === "enter") {
+        (document.activeElement as HTMLElement | null)?.blur?.(); // a focused button must not also fire on Enter
+        e.preventDefault();
+        this.onEnter();
+      }
+      if (k === " " && this.onSpace) this.onSpace();
     });
     window.addEventListener("keyup", (e) => this.held.delete(e.key.toLowerCase()));
     window.addEventListener("blur", () => {
