@@ -64,15 +64,15 @@ describe("output format", () => {
     expect(r.lines.filter((l) => l.type === "end")).toHaveLength(1);
     expect(r.lines[r.lines.length - 1]?.type).toBe("end");
   });
-  it("snapshot fields of contract v1.1", () => {
+  it("snapshot fields of contract v1.2", () => {
     const s = r.snapAt(600);
     expect(Object.keys(s).sort()).toEqual(
       ["charms", "drifters", "lanterns", "motes", "motes_active", "night", "player", "score", "shades", "sim_tick", "state", "tick", "time_left_s", "type", "wind"].sort(),
     );
-    expect(Object.keys(s.player).sort()).toEqual(["carried", "charm_s", "dash_cd_s", "flames", "grounded", "invuln", "pos", "pulse_cd_s", "vel"]);
+    expect(Object.keys(s.player).sort()).toEqual(["capacity", "carried", "charm_s", "dash_cd_s", "flames", "grounded", "invuln", "pos", "pulse_cd_s", "vel"]);
     expect(Object.keys(s.wind).sort()).toEqual(["active", "dir_deg"]);
     expect(Object.keys(s.motes[0]).sort()).toEqual(["id", "kind", "pos", "ttl_s"]);
-    expect(Object.keys(s.lanterns[0]).sort()).toEqual(["deposited", "id", "lit", "pos"]);
+    expect(Object.keys(s.lanterns[0]).sort()).toEqual(["deposited", "ever_lit", "fuel", "id", "lit", "pos", "relit_count"]);
     expect(s.motes_active).toBe(s.motes.length);
     expect(typeof s.player.grounded).toBe("boolean");
     expect(typeof s.player.invuln).toBe("boolean");
@@ -275,28 +275,30 @@ describe("contract", () => {
     expect(contract.tuning).toEqual(TUNING);
   });
   it("header fields", () => {
-    expect(contract.contract_version).toBe("1.1");
+    expect(contract.contract_version).toBe("1.2");
     expect(contract.team).toBe("2A202603622-NgoHuyHoang");
     expect(contract.headless_cmd).toBe("node dist/headless/cli.js");
     expect(contract.build_cmd).toContain("npm run build");
   });
-  it("has every key of contract v1.0 plus the v1.1 ones", () => {
+  it("has every key of contracts v1.0 and v1.1 plus the v1.2 ones", () => {
     expect(Object.keys(contract.tuning).sort()).toEqual(
       [
         "player_speed", "carry_capacity", "lantern_cost", "lantern_count_night1", "pickup_radius", "interact_radius",
         "pulse_cost", "pulse_radius", "night1_duration_s", "flames", "invuln_s", "hit_drop_ratio", "pulse_stun_s",
         "pulse_push_m", "pulse_cooldown_s", "safe_radius", "shade_speed", "shade_hit_radius", "fall_enabled", "score",
         "dash_speed", "dash_duration_s", "dash_cooldown_s", "night2_duration_s", "night3_duration_s",
+        "fuel_max", "fuel_decay_per_s", "fuel_per_mote", "relight_cost", "win_ratio", "drain_per_s", "low_fuel_threshold", "capacity_max",
       ].sort(),
     );
   });
-  it("the standard numbers of Ticket-02 part 1", () => {
+  it("the standard numbers of Ticket-02 and Ticket-03", () => {
     expect(contract.tuning).toMatchObject({
       player_speed: 6, carry_capacity: 10, lantern_cost: 10, pickup_radius: 1, interact_radius: 2, pulse_cost: 3, pulse_radius: 5,
       pulse_cooldown_s: 3, pulse_stun_s: 2, pulse_push_m: 4, safe_radius: 6, shade_speed: 4, flames: 3, invuln_s: 1.5,
-      dash_speed: 14, dash_duration_s: 0.2, dash_cooldown_s: 1.5, night1_duration_s: 300, night2_duration_s: 330, night3_duration_s: 360,
+      dash_speed: 14, dash_duration_s: 0.2, dash_cooldown_s: 1.5, night1_duration_s: 240, night2_duration_s: 270, night3_duration_s: 300,
+      fuel_max: 100, fuel_decay_per_s: 1, fuel_per_mote: 10, relight_cost: 5, win_ratio: 0.6, drain_per_s: 5, low_fuel_threshold: 30, capacity_max: 20,
     });
-    expect(contract.tuning.score).toEqual({ per_mote: 10, per_lantern: 100, per_stun: 5, per_second_left: 2, per_flame_left: 50 });
+    expect(contract.tuning.score).toEqual({ per_mote: 5, per_lantern: 100, per_stun: 5, per_second_left: 0, per_flame_left: 50 });
   });
   it("the game really uses the declared numbers (night lengths, flames, lanterns, speed, dash)", () => {
     const s = runNamed("dash");

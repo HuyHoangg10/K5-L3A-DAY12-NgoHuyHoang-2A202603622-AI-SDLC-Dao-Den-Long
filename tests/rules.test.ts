@@ -74,7 +74,7 @@ describe("motes and lanterns", () => {
     expect(r.events).toEqual([
       { type: "event", tick: 1, name: "night_start", data: { night: 1 } },
       { type: "event", tick: 1, name: "deposit", data: { lantern_id: "L1", amount: 10, deposited: 10 } },
-      { type: "event", tick: 1, name: "lantern_lit", data: { lantern_id: "L1" } },
+      { type: "event", tick: 1, name: "lantern_lit", data: { lantern_id: "L1", relight: false } },
     ]);
     expect(r.snapAt(1).score).toBe(10 * T.score.per_mote + T.score.per_lantern);
   });
@@ -89,7 +89,7 @@ describe("motes and lanterns", () => {
     expect(runNamed("deposit_full").eventsNamed("deposit")).toHaveLength(1); // z=23 is exactly 2.0 from L1
     expect(runNamed("deposit_far").eventsNamed("deposit")).toHaveLength(0); // z=22.9
   });
-  it("a lit lantern takes nothing more; the nearest unlit one is chosen, ties go to the smaller id", () => {
+  it("the nearest lantern that can take fireflies is chosen (unlit, or lit but not full); ties go to the smaller id", () => {
     const r = runInline({
       ticks: 2,
       scenario: {
@@ -97,6 +97,16 @@ describe("motes and lanterns", () => {
         player: { pos: [0, 0, 24], carried: 10 },
         lanterns: [{ id: "L1", lit: true }, { id: "L2", pos: [1, 0, 24] }, { id: "L3", pos: [-1, 0, 24] }],
       },
+      frames: [{ tick: 0, interact: true }],
+    });
+    // L1 (lit, 99.98 after one tick of decay), L2 and L3 are all 1.0 m away: the smaller id wins, as a refuel
+    expect(r.eventsNamed("refuel")[0]?.data).toMatchObject({ lantern_id: "L1", amount: 1 });
+    expect(r.eventsNamed("deposit")).toHaveLength(0);
+  });
+  it("a lit lantern is skipped when a nearer unlit one exists", () => {
+    const r = runInline({
+      ticks: 2,
+      scenario: { random_motes: false, random_shades: false, player: { pos: [0, 0, 24], carried: 10 }, lanterns: [{ id: "L1", lit: true }, { id: "L2", pos: [0.5, 0, 24] }] },
       frames: [{ tick: 0, interact: true }],
     });
     expect(r.eventsNamed("deposit")[0]?.data).toMatchObject({ lantern_id: "L2" });
@@ -284,42 +294,61 @@ describe("safe zone", () => {
   });
 });
 
-describe("win, lose, score", () => {
-  it("lighting the last lantern wins at the end of that tick; score = 10/firefly + 100/lantern + 2*floor(seconds left) + 50*flames", () => {
-    const r = runNamed("win");
-    expect(r.events.map((e) => e.name)).toEqual(["night_start", "deposit", "lantern_lit", "game_over"]);
-    expect(r.eventsNamed("game_over")[0]?.data).toEqual({ result: "won", reason: "all_lit" });
-    expect(r.end).toEqual({ type: "end", ticks: 1, state: "won", score: 10 * 10 + 100 + 2 * 99 + 50 * 3 });
+describe("win, lose, score (Ticket-03 rules)", () => {
+  it("dawn with at least ceil(0.6 x lanterns) lit is a win (reason dawn_survived); the score is 50 + floor(fuel) per lit lantern + 50 per flame", () => {
+    const r = runNamed("dawn_win");
+    expect(r.eventsNamed("game_over")[0]).toEqual({ type: "event", tick: 60, name: "game_over", data: { result: "won", reason: "dawn_survived" } });
+    // 3 lanterns left with 50 - 1 = 49 fuel after 60 ticks, 3 flames
+    expect(r.end).toEqual({ type: "end", ticks: 60, state: "won", score: 3 * (50 + 49) + 3 * 50 });
   });
-  it("winning on the very tick the time runs out is still a win", () => {
-    const r = runNamed("win_last_tick");
-    expect(r.eventsNamed("game_over")[0]?.data).toEqual({ result: "won", reason: "all_lit" });
+  it("dawn with fewer lit lanterns than the threshold is a loss (reason dawn)", () => {
+    const r = runNamed("dawn_lose_threshold"); // 2 of 5 lit, 3 needed
+    expect(r.eventsNamed("game_over")[0]?.data).toEqual({ result: "lost", reason: "dawn" });
+    expect(r.end.score).toBe(0);
+  });
+  it.each([[1, 5, 3], [2, 6, 4], [3, 7, 5]] as const)("night %i has %i lanterns and needs %i lit at dawn", (night, total, need) => {
+    const lit = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `L${i + 1}`, lit: true }));
+    const run = (n: number) =>
+      runInline({ ticks: 20, night, scenario: { random_motes: false, random_shades: false, random_drifters: false, wind_enabled: false, time_left_s: 0.1, lanterns: lit(n), player: night === 3 ? { pos: [0, 6, 6] } : {} } });
+    expect(run(0).snapAt(0).lanterns).toHaveLength(total);
+    expect(run(need).eventsNamed("game_over")[0]?.data).toEqual({ result: "won", reason: "dawn_survived" });
+    expect(run(need - 1).eventsNamed("game_over")[0]?.data).toEqual({ result: "lost", reason: "dawn" });
+  });
+  it("lighting every lantern does NOT end the night early", () => {
+    const r = runNamed("all_lit_no_early_win");
+    expect(r.eventsNamed("game_over")).toHaveLength(0);
+    expect(r.end.state).toBe("playing");
   });
   it("time out with unlit lanterns loses with reason dawn at tick 120", () => {
     const r = runNamed("lose_dawn");
     expect(r.eventsNamed("game_over")[0]).toEqual({ type: "event", tick: 120, name: "game_over", data: { result: "lost", reason: "dawn" } });
     expect(r.snapAt(120).time_left_s).toBe(0);
   });
-  it("no flames beats a win or a dawn on the same tick", () => {
+  it("no flames loses first, also on the dawn tick, even with enough lit lanterns", () => {
     const r = runInline({
       ticks: 5,
       scenario: {
         random_motes: false, random_shades: false, time_left_s: 1 / 60,
         player: { carried: 0, flames: 1 }, shades: [{ id: "S1", pos: [0.5, 1, 0], state: "chase" }],
-        lanterns: [{ id: "L1", lit: true }, { id: "L2", lit: true }, { id: "L3", lit: true }, { id: "L4", lit: true }, { id: "L5", lit: true }],
+        lanterns: [1, 2, 3, 4, 5].map((i) => ({ id: `L${i}`, lit: true })),
       },
     });
     expect(r.eventsNamed("game_over")[0]?.data).toEqual({ result: "lost", reason: "no_flames" });
   });
-  it("all lanterns pre-lit by the scenario wins on the first tick without scoring for them", () => {
-    const r = runInline({ ticks: 3, scenario: { random_motes: false, random_shades: false, lanterns: [1, 2, 3, 4, 5].map((i) => ({ id: `L${i}`, lit: true })) } });
-    expect(r.snapAt(0).score).toBe(0);
-    expect(r.eventsNamed("game_over")).toHaveLength(1);
+  it("the last flame lost ends the night at once", () => {
+    const r = runNamed("lose_flames");
+    expect(r.eventsNamed("game_over")[0]).toEqual({ type: "event", tick: 1, name: "game_over", data: { result: "lost", reason: "no_flames" } });
   });
-  it("starts with 3 flames; night 1 lasts 300 s", () => {
+  it("no time bonus any more: winning with lots of time left scores the same", () => {
+    const run = (secs: number) =>
+      runInline({ ticks: 1000, scenario: { random_motes: false, random_shades: false, time_left_s: secs, lanterns: [{ id: "L1", lit: true, fuel: 100 }, { id: "L2", lit: true, fuel: 100 }, { id: "L3", lit: true, fuel: 100 }] } }).end.score;
+    expect(run(2)).toBe(run(3) + 3 * 1); // the only difference: one second less of decay leaves 1 more fuel on each of 3 lanterns
+  });
+  it("starts with 3 flames; night 1 lasts 240 s", () => {
     const s = runInline({ ticks: 0 }).snapAt(0);
     expect(s.player.flames).toBe(3);
-    expect(s.time_left_s).toBe(300);
+    expect(s.time_left_s).toBe(T.night1_duration_s);
+    expect(T.night1_duration_s).toBe(240);
   });
 });
 
@@ -355,7 +384,7 @@ describe("pause", () => {
     expect(r.snapAt(11).tick).toBe(11);
     expect(r.snapAt(11).sim_tick).toBe(10);
     expect(r.snapAt(20).sim_tick).toBe(10);
-    expect(r.snapAt(20).time_left_s).toBeCloseTo(300 - 10 / 60, 3);
+    expect(r.snapAt(20).time_left_s).toBeCloseTo(T.night1_duration_s - 10 / 60, 3);
     expect(r.snapAt(20).player.pos).toEqual(r.snapAt(11).player.pos);
     expect(r.snapAt(21).state).toBe("playing");
     expect(r.snapAt(21).sim_tick).toBe(11);
@@ -381,9 +410,9 @@ describe("night chain", () => {
       expect(r.snapAt(0).night).toBe(n);
     }
   });
-  it("durations 300 / 330 / 360 s and lantern counts 5 / 6 / 7", () => {
+  it("durations 240 / 270 / 300 s and lantern counts 5 / 6 / 7", () => {
     const s = [1, 2, 3].map((n) => runInline({ ticks: 0, night: n as 1 | 2 | 3 }).snapAt(0));
-    expect(s.map((x) => x.time_left_s)).toEqual([300, 330, 360]);
+    expect(s.map((x) => x.time_left_s)).toEqual([240, 270, 300]);
     expect(s.map((x) => x.lanterns.length)).toEqual([5, 6, 7]);
   });
 });

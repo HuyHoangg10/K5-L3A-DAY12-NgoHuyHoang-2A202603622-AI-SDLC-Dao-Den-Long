@@ -1,6 +1,6 @@
 export type Vec3 = [number, number, number];
 export type SimState = "playing" | "paused" | "won" | "lost";
-export type ShadeState = "spawning" | "wander" | "chase" | "recoil" | "stunned";
+export type ShadeState = "spawning" | "wander" | "chase" | "recoil" | "stunned" | "drain";
 export type DrifterState = "idle" | "chase" | "flee";
 
 export interface FrameInput {
@@ -29,6 +29,8 @@ export interface ScenarioLantern {
   pos?: Vec3;
   deposited?: number;
   lit?: boolean;
+  fuel?: number;
+  ever_lit?: boolean;
 }
 
 export interface ScenarioShade {
@@ -36,6 +38,7 @@ export interface ScenarioShade {
   pos: Vec3;
   state?: ShadeState;
   state_ticks_left?: number;
+  target_lantern_id?: string;
 }
 
 export interface ScenarioDrifter {
@@ -61,6 +64,7 @@ export interface Scenario {
     dash_cd_ticks?: number;
     pulse_cd_ticks?: number;
     charm_ticks?: number;
+    successful_lights?: number;
   };
   random_motes?: boolean;
   random_shades?: boolean;
@@ -89,8 +93,11 @@ export interface Mote {
 export interface Lantern {
   id: string;
   pos: Vec3;
-  lit: boolean;
+  lit: boolean; // lit means fuel > 0
   deposited: number;
+  fuel60: number; // fuel in sixtieths of a unit (an integer): 6000 = 100
+  everLit: boolean;
+  relitCount: number;
 }
 export interface Shade {
   id: string;
@@ -103,6 +110,8 @@ export interface Shade {
   push: { dir: [number, number]; ticksLeft: number } | null; // pulse push-back
   recoilDir: [number, number] | null;
   pushOut: number; // ticks left of being pushed out of a freshly lit lantern's safe zone (no damage meanwhile)
+  drain: { lantern: string; ticks: number } | null; // draining that lantern; ticks counts up for the fuel_drain event
+  targetLantern: string | null; // scenario override of the wander target
 }
 export interface Drifter {
   id: string;

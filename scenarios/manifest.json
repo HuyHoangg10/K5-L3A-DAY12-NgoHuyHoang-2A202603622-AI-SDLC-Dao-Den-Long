@@ -113,20 +113,6 @@
       "snapshot_every": 10
     },
     {
-      "name": "win",
-      "night": 1,
-      "seed": 1,
-      "ticks": 50,
-      "snapshot_every": 1
-    },
-    {
-      "name": "win_last_tick",
-      "night": 1,
-      "seed": 1,
-      "ticks": 50,
-      "snapshot_every": 1
-    },
-    {
       "name": "lose_dawn",
       "night": 1,
       "seed": 1,
@@ -277,22 +263,176 @@
       "name": "full_night1",
       "night": 1,
       "seed": 3,
-      "ticks": 18000,
+      "ticks": 14400,
       "snapshot_every": 60
     },
     {
       "name": "full_night2",
       "night": 2,
       "seed": 3,
-      "ticks": 19800,
+      "ticks": 16200,
       "snapshot_every": 60
     },
     {
       "name": "full_night3",
       "night": 3,
       "seed": 3,
-      "ticks": 21600,
+      "ticks": 18000,
       "snapshot_every": 60
+    },
+    {
+      "name": "dawn_win",
+      "night": 1,
+      "seed": 1,
+      "ticks": 120,
+      "snapshot_every": 60
+    },
+    {
+      "name": "dawn_lose_threshold",
+      "night": 1,
+      "seed": 1,
+      "ticks": 120,
+      "snapshot_every": 60
+    },
+    {
+      "name": "all_lit_no_early_win",
+      "night": 1,
+      "seed": 1,
+      "ticks": 300,
+      "snapshot_every": 60
+    },
+    {
+      "name": "fuel_decay",
+      "night": 1,
+      "seed": 1,
+      "ticks": 600,
+      "snapshot_every": 60
+    },
+    {
+      "name": "refuel",
+      "night": 1,
+      "seed": 1,
+      "ticks": 20,
+      "snapshot_every": 1
+    },
+    {
+      "name": "refuel_small",
+      "night": 1,
+      "seed": 1,
+      "ticks": 20,
+      "snapshot_every": 1
+    },
+    {
+      "name": "refuel_no_light",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "lantern_out",
+      "night": 1,
+      "seed": 1,
+      "ticks": 200,
+      "snapshot_every": 20
+    },
+    {
+      "name": "relight",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "relight_partial",
+      "night": 1,
+      "seed": 1,
+      "ticks": 10,
+      "snapshot_every": 1
+    },
+    {
+      "name": "drain",
+      "night": 1,
+      "seed": 1,
+      "ticks": 300,
+      "snapshot_every": 10
+    },
+    {
+      "name": "drain_two_shades",
+      "night": 1,
+      "seed": 1,
+      "ticks": 130,
+      "snapshot_every": 10
+    },
+    {
+      "name": "drain_chase",
+      "night": 1,
+      "seed": 1,
+      "ticks": 20,
+      "snapshot_every": 1
+    },
+    {
+      "name": "drain_pulse",
+      "night": 1,
+      "seed": 1,
+      "ticks": 30,
+      "snapshot_every": 1
+    },
+    {
+      "name": "refuel_pushout",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 1
+    },
+    {
+      "name": "weak_unsafe",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 10
+    },
+    {
+      "name": "strong_safe",
+      "night": 1,
+      "seed": 1,
+      "ticks": 60,
+      "snapshot_every": 10
+    },
+    {
+      "name": "wander_to_weak",
+      "night": 1,
+      "seed": 1,
+      "ticks": 120,
+      "snapshot_every": 20
+    },
+    {
+      "name": "target_lantern",
+      "night": 1,
+      "seed": 1,
+      "ticks": 120,
+      "snapshot_every": 20
+    },
+    {
+      "name": "capacity_growth",
+      "night": 1,
+      "seed": 1,
+      "ticks": 5,
+      "snapshot_every": 1
+    },
+    {
+      "name": "capacity_cap",
+      "night": 1,
+      "seed": 1,
+      "ticks": 2,
+      "snapshot_every": 1
+    },
+    {
+      "name": "light_grows_capacity",
+      "night": 1,
+      "seed": 1,
+      "ticks": 20,
+      "snapshot_every": 1
     }
   ]
 }

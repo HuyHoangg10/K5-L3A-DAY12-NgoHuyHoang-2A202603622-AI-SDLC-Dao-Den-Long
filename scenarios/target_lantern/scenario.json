@@ -1,0 +1,24 @@
+{
+  "random_motes": false,
+  "random_shades": false,
+  "random_drifters": false,
+  "wind_enabled": false,
+  "player": {
+    "pos": [
+      0,
+      0,
+      -39
+    ]
+  },
+  "shades": [
+    {
+      "id": "S1",
+      "pos": [
+        -20,
+        1,
+        0
+      ],
+      "target_lantern_id": "L2"
+    }
+  ]
+}

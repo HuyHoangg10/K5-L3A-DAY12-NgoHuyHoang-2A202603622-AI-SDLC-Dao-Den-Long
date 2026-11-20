@@ -63,7 +63,7 @@ export function parseScenario(raw: unknown): Scenario {
     if (p.pos !== undefined) s.player.pos = vec3(p.pos, "player.pos");
     if (p.carried !== undefined) s.player.carried = num(p.carried, "player.carried", 0);
     if (p.flames !== undefined) s.player.flames = num(p.flames, "player.flames", 0);
-    for (const k of ["invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks"] as const) {
+    for (const k of ["invuln_ticks", "dash_cd_ticks", "pulse_cd_ticks", "charm_ticks", "successful_lights"] as const) {
       if (p[k] !== undefined) s.player[k] = num(p[k], `player.${k}`, 0);
     }
   }
@@ -87,10 +87,14 @@ export function parseScenario(raw: unknown): Scenario {
         out.id = sh.id;
       }
       if (sh.state !== undefined) {
-        if (!["spawning", "wander", "chase", "recoil", "stunned"].includes(sh.state as string)) throw new FormatError(`shades[${i}].state is not a known state`);
+        if (!["spawning", "wander", "chase", "recoil", "stunned", "drain"].includes(sh.state as string)) throw new FormatError(`shades[${i}].state is not a known state`);
         out.state = sh.state as ShadeState;
       }
       if (sh.state_ticks_left !== undefined) out.state_ticks_left = num(sh.state_ticks_left, `shades[${i}].state_ticks_left`, 0);
+      if (sh.target_lantern_id !== undefined) {
+        if (typeof sh.target_lantern_id !== "string") throw new FormatError(`shades[${i}].target_lantern_id must be a string`);
+        out.target_lantern_id = sh.target_lantern_id;
+      }
       return out;
     });
   }
@@ -135,6 +139,11 @@ export function parseScenario(raw: unknown): Scenario {
       if (l.lit !== undefined) {
         if (typeof l.lit !== "boolean") throw new FormatError(`lanterns[${i}].lit must be a boolean`);
         out.lit = l.lit;
+      }
+      if (l.fuel !== undefined) out.fuel = num(l.fuel, `lanterns[${i}].fuel`, 0);
+      if (l.ever_lit !== undefined) {
+        if (typeof l.ever_lit !== "boolean") throw new FormatError(`lanterns[${i}].ever_lit must be a boolean`);
+        out.ever_lit = l.ever_lit;
       }
       return out;
     });

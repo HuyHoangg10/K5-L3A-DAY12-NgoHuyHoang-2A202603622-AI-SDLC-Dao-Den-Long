@@ -1,6 +1,7 @@
 // The single place for every game number. game.contract.json "tuning" must equal TUNING
 // (tests/contract.test.ts checks it). Distances in metres, times in seconds.
-// Phase 2 (contract v1.1): these are the lab's standard numbers (Ticket-02, part 1), not my own guesses.
+// Phase 2 (contract v1.1): the lab's standard numbers (Ticket-02, part 1). Phase 3 (v1.2, Ticket-03) adds fuel and changes
+// the night lengths, the win rule and the score.
 
 export const TUNING = {
   player_speed: 6, // m/s
@@ -11,7 +12,7 @@ export const TUNING = {
   interact_radius: 2,
   pulse_cost: 3,
   pulse_radius: 5,
-  night1_duration_s: 300,
+  night1_duration_s: 240,
   flames: 3,
   invuln_s: 1.5,
   hit_drop_ratio: 0.5, // dropped = floor(carried * ratio)
@@ -23,17 +24,25 @@ export const TUNING = {
   shade_hit_radius: 1,
   fall_enabled: true,
   score: {
-    per_mote: 10,
-    per_lantern: 100,
+    per_mote: 5, // each firefly put into a lantern (new light, relight or refuel)
+    per_lantern: 100, // first lighting
     per_stun: 5,
-    per_second_left: 2,
+    per_second_left: 0, // the time bonus was removed in Phase 3
     per_flame_left: 50,
   },
   dash_speed: 14,
   dash_duration_s: 0.2,
   dash_cooldown_s: 1.5,
-  night2_duration_s: 330,
-  night3_duration_s: 360,
+  night2_duration_s: 270,
+  night3_duration_s: 300,
+  fuel_max: 100,
+  fuel_decay_per_s: 1,
+  fuel_per_mote: 10,
+  relight_cost: 5,
+  win_ratio: 0.6,
+  drain_per_s: 5,
+  low_fuel_threshold: 30,
+  capacity_max: 20,
 } as const;
 
 // Other standard numbers of Ticket-02 and my own choices where the ticket is silent (see docs/notes/assumptions.md).
@@ -87,6 +96,12 @@ export const CONSTANTS = {
   wind_ticks: 300,
   wind_warn_ticks: 120,
   wind_push: 2, // m/s
+  capacity_per_light: 2, // capacity = carry_capacity + 2 * successful lightings, at most capacity_max
+  relight_score: 40,
+  dawn_lantern_score: 50, // + floor(fuel)
+  stun_drain_score: 15, // a pulse hit on a shade that was draining
+  drain_range: 2, // a shade this close (XZ) to a weak lantern starts draining
+  fuel_units: 60, // fuel is kept in sixtieths of a unit so long runs have no float error
   eps: 1e-9,
 } as const;
 
